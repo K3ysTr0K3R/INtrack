@@ -45,7 +45,7 @@ def process_ip(ip, args):
     return None
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate IP addresses and check for open ports or specific instances.")
+    parser = argparse.ArgumentParser(description="INtrack - Internet Crawler")
     parser.add_argument("-n", type=int, required=True, help="Number of targets to find.")
     parser.add_argument("-p", type=int, default=None, help="Port to check.")
     parser.add_argument("-t", type=int, default=1, help="Number of threads to use.")
