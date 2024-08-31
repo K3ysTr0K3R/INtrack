@@ -11,7 +11,7 @@ def check_wordpress(ip, port=None):
             try:
                 response = requests.get(url, timeout=5, verify=False)
                 if any(matcher in response.text for matcher in matchers):
-                    print(f"[+] Found WordPress site: {url} {response.status_code}")
+                    print(f"[+] Found WordPress site: {url}")
                     return True
             except requests.RequestException:
                 continue
