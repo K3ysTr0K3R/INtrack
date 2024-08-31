@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import argparse
 import random
 import socket
@@ -15,6 +16,10 @@ from lib.CVE_2017_7921 import check_CVE_2017_7921
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+def log_result_background(target):
+    with open('intrack.log', 'a') as log_file:
+        log_file.write(f"{target}\n")
+
 def generate_ip():
     return f"{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}"
 
@@ -28,28 +33,36 @@ def check_port(ip, port):
             return False
 
 def process_ip(ip, args):
-    if args.worm:
-        if args.worm == 'vscode-sftp':
-            crawl_vscode_sftp(ip, args.p)
+    worm_checks = [
+        ('vscode-sftp', crawl_vscode_sftp)
+    ]
+
+    vuln_checks = [
+        ('CVE-2017-7921', check_CVE_2017_7921)
+    ]
+
+    instance_checks = [
+        ('wordpress', check_wordpress),
+        ('gargoyle', check_gargoyle),
+        ('gpon', check_gpon),
+        ('webcamxp', check_webcamxp)
+    ]
+
+    for worm, check_function in worm_checks:
+        if args.worm == worm and check_function(ip, args.p):
             return ip
 
-    if args.vuln:
-        if args.vuln == 'CVE-2017-7921':
-            check_CVE_2017_7921(ip, args.p)
+    for vuln, check_function in vuln_checks:
+        if args.vuln == vuln and check_function(ip, args.p):
             return ip
 
-    if args.instance:
-        if args.instance == 'wordpress' and check_wordpress(ip, args.p):
+    for instance, check_function in instance_checks:
+        if args.instance == instance and check_function(ip, args.p):
             return ip
-        elif args.instance == 'gargoyle' and check_gargoyle(ip, args.p):
-            return ip
-        elif args.instance == 'gpon' and check_gpon(ip, args.p):
-            return ip
-        elif args.instance == 'webcamxp' and check_webcamxp(ip, args.p):
-            return ip
-    else:
-        if check_port(ip, args.p):
-            return ip
+
+    if not args.instance and not args.vuln and check_port(ip, args.p):
+        return ip
+
     return None
 
 def main():
@@ -75,6 +88,9 @@ def main():
             new_targets = list(filter(None, results))
             found_targets.extend(new_targets)
 
+            for target in new_targets:
+                log_result_background(target)
+
             if args.o:
                 with open(args.o, 'a') as file:
                     for target in new_targets:
@@ -82,8 +98,7 @@ def main():
 
             instance_bar(len(ip_addresses))
 
-    print(f"\n[*] Total targets found: {len(found_targets)}")
-    print("")
+    print(f"\n[*] Total targets found: {len(found_targets)}\n")
     for targ in found_targets[:args.n]:
         print(targ)
 
