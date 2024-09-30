@@ -19,3 +19,4 @@ Contributions are welcome! Please follow the standard contribution guidelines fo
 ---
 
 **Stay tuned for updates as we continue to improve INtrack!**
+[![Views](https://komarev.com/ghpvc/?username=K3ysTr0K3R)](https://github.com/K3ysTr0K3R)
