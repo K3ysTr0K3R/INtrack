@@ -22,7 +22,6 @@ def check_joomla(ip, ports=None, timeout=10):
                     if any(matcher in response.text for matcher in matchers):
                         print_green(f"Joomla instance detected: {url}")
                         return True
-                except requests.RequestException as e:
-                    print_red(f"Error accessing {url}: {e}")
+                except requests.RequestException:
                     continue
     return False
