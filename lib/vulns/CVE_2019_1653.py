@@ -2,7 +2,7 @@ import requests
 from lib.headers.headers_handler import user_agents
 from lib.color_handler import print_green, print_blue, print_red, print_yellow
 
-def check_CVE_2019_1653(ip, ports=None, timeout=timeout):
+def check_CVE_2019_1653(ip, ports=None, timeout=10):
 	headers = {"User-Agent": user_agents()}
 	path = "/cgi-bin/config.exp"
 	protocols = ["http", "https"]

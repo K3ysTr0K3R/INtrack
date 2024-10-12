@@ -13,14 +13,11 @@ from lib.worms.microsoft_worm import microsoft_worm
 from lib.worms.tomcat_worm import exploit_CVE_2017_12615_CVE_2017_12617
 from lib.worms.hadoop_worm import hadoop_worm
 
-
 from lib.exposures.robots_scanner import check_robots
 from lib.exposures.security_scanner import check_security
 from lib.exposures.sitemap_scanner import check_sitemap
 
-
 from lib.miscellaneous.dir_listing import check_dir_listing
-
 
 from lib.iot.gargoyle_scanner import check_gargoyle
 from lib.iot.gpon_scanner import check_gpon
@@ -30,7 +27,6 @@ from lib.iot.hikvision_scanner import check_hikvision
 from lib.iot.cisco_scanner import check_cisco
 from lib.iot.epmp_scanner import check_epmp
 from lib.iot.network_camera import check_network_camera
-
 
 from lib.instances.wordpress_scanner import check_wordpress
 from lib.instances.microsoft_iis import check_microsoft_iis
@@ -44,13 +40,12 @@ from lib.instances.jira import check_jira
 from lib.instances.joomla import check_joomla
 from lib.instances.zimbra import check_zimbra
 
-
 from lib.network.telnet_scanner import scan_telnet
 from lib.network.rdp_scanner import scan_rdp
 from lib.network.adb_misconfig import check_adb
 from lib.network.network_handler import get_ips_from_subnet
 
-
+from lib.vulns.CVE_2016_6277 import check_CVE_2016_6277
 from lib.vulns.CVE_2024_0305 import check_CVE_2024_0305
 from lib.vulns.CVE_2018_13379 import check_CVE_2018_13379
 from lib.vulns.CVE_2017_7921 import check_CVE_2017_7921
@@ -60,7 +55,6 @@ from lib.vulns.CVE_2022_47945 import check_CVE_2022_47945
 from lib.vulns.CVE_2021_36260 import check_CVE_2021_36260
 from lib.vulns.CVE_2017_5487 import check_CVE_2017_5487
 from lib.vulns.CVE_2017_7925 import check_CVE_2017_7925
-from lib.vulns.CVE_2016_6277 import check_CVE_2016_6277
 from lib.vulns.CVE_2022_40684 import check_CVE_2022_40684
 from lib.vulns.directory_traversal_scanner import traversal
 
@@ -85,9 +79,16 @@ def parse_ports(port_str):
     for part in port_str.split(','):
         if '-' in part:
             start, end = map(int, part.split('-'))
+            if start > end:
+                print_red(f"Invalid port range: {start}-{end}")
+                continue
             ports.update(range(start, end + 1))
         else:
-            ports.add(int(part))
+            port = int(part)
+            if 1 <= port <= 65535:
+                ports.add(port)
+            else:
+                print_red(f"Invalid port number: {port}")
     return sorted(ports)
 
 def process_ip(ip, args):
@@ -125,7 +126,7 @@ def process_ip(ip, args):
         ('ncast', check_ncast),
         ('jira', check_jira),
         ('joomla', check_joomla),
-        ('zimbra', check_zimbra) 
+        ('zimbra', check_zimbra)
     ]
 
     exposure_checks = [
@@ -202,13 +203,17 @@ def process_ip(ip, args):
 
 def read_targets_from_file(filename):
     ips = []
-    with open(filename, 'r') as f:
-        for line in f:
-            target = line.strip()
-            if '/' in target:
-                ips.extend(get_ips_from_subnet(target))
-            else:
-                ips.append(target)
+    try:
+        with open(filename, 'r') as f:
+            for line in f:
+                target = line.strip()
+                if '/' in target:
+                    ips.extend(get_ips_from_subnet(target))
+                else:
+                    ips.append(target)
+    except FileNotFoundError:
+        print_red(f"Error: The file '{filename}' was not found.")
+        sys.exit(1)
     return ips
 
 def main():
@@ -219,16 +224,16 @@ def main():
     parser.add_argument("-p", type=str, default="80", help="Port(s) to check. Defaults to 80 if not provided.")
     parser.add_argument("-t", type=int, default=25, help="Number of threads to use.")
     parser.add_argument("-o", type=str, help="Store results into a file.")
-    parser.add_argument("-lh", "-lhost", type=str, help="Add a listening host for whenever INtrack plants a payload and gives you a revshell from a target.")
-    parser.add_argument("-lp", "-lport", type=str, help="A listening port for whenever INtrack plants a payload and gives you a revshell from a target.")
+    parser.add_argument("-lh", "-lhost", type=str, help="Add a listening host for revshells.")
+    parser.add_argument("-lp", "-lport", type=str, help="A listening port for revshells.")
     parser.add_argument("-instance", type=str, help="Type of instance to check.")
     parser.add_argument("-worm", type=str, help="Enable special script execution with a specified type (e.g., 'vscode-sftp').")
     parser.add_argument("-vuln", type=str, help="Enable vuln script execution with a specified type (e.g., CVE-2017-7921).")
     parser.add_argument("-exposure", type=str, help="Used to detect exposure files.")
-    parser.add_argument("-iot", type=str, help="Used to detect IoT devices on the internet.")
-    parser.add_argument("-miscellaneous", type=str, help="Used to detect IoT devices on the internet.")
+    parser.add_argument("-iot", type=str, help="Used to detect IoT devices.")
+    parser.add_argument("-miscellaneous", type=str, help="Used for miscellaneous checks.")
     parser.add_argument("-network", type=str, help="Used for network scans.")
-    parser.add_argument("-timeout", type=int, default=10, help="The number of timeout seconds to use for web requests.")
+    parser.add_argument("-timeout", type=int, default=10, help="Timeout seconds for web requests.")
     parser.add_argument("-spider", type=str, help="Specify the subnet range to scan if a result is found (e.g., /20, /24).")
 
     args = parser.parse_args()
@@ -236,42 +241,26 @@ def main():
     found_targets = []
 
     if args.host:
-        if "/" in args.host:
-            ip_addresses = get_ips_from_subnet(args.host)
-        else:
-            ip_addresses = [args.host]
+        ip_addresses = get_ips_from_subnet(args.host) if "/" in args.host else [args.host]
     elif args.f:
         ip_addresses = read_targets_from_file(args.f)
     else:
         if args.n is None or args.p is None:
-            print("Error: You must provide both -n (number of targets) and -p (port) for internet scanning.")
+            print_red("Error: You must provide both -n (number of targets) and -p (port) for internet scanning.")
             sys.exit(1)
+        ip_addresses = [generate_ip() for _ in range(args.n)]
 
     with alive_bar(args.n or len(ip_addresses), title="[Scanning Internet]", enrich_print=False, bar="blocks") as instance_bar:
-        if not args.host and not args.f:
-            while len(found_targets) < args.n:
-                ip_addresses = [generate_ip() for _ in range(args.t * 10)]
-                with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
-                    for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
-                        if result:
-                            found_targets.append(result)
-                        instance_bar()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
+            for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
+                if result:
+                    found_targets.append(result)
+                instance_bar()
 
-                if args.o:
-                    with open(args.o, 'a') as file:
-                        for target in found_targets:
-                            file.write(f"{target}\n")
-        else:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
-                for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
-                    if result:
-                        found_targets.append(result)
-                    instance_bar()
-
-            if args.o:
-                with open(args.o, 'a') as file:
-                    for target in found_targets:
-                        file.write(f"{target}\n")
+    if args.o:
+        with open(args.o, 'a') as file:
+            for target in found_targets:
+                file.write(f"{target}\n")
 
     for targ in found_targets[:args.n]:
         print(targ)

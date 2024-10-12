@@ -10,7 +10,14 @@
 
 ## Usage
 
+**git clone https://github.com/esistdini/INtrack**
+
+**cd INtrack**
+
+**pip install -r requirements.txt**
+
 You can start using INtrack now, but please note that it is still under development. Stay tuned for future updates and enhancements.
+
 
 ## Contributing
 
