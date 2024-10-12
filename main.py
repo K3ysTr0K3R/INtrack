@@ -241,26 +241,42 @@ def main():
     found_targets = []
 
     if args.host:
-        ip_addresses = get_ips_from_subnet(args.host) if "/" in args.host else [args.host]
+        if "/" in args.host:
+            ip_addresses = get_ips_from_subnet(args.host)
+        else:
+            ip_addresses = [args.host]
     elif args.f:
         ip_addresses = read_targets_from_file(args.f)
     else:
         if args.n is None or args.p is None:
-            print_red("Error: You must provide both -n (number of targets) and -p (port) for internet scanning.")
+            print("Error: You must provide both -n (number of targets) and -p (port) for internet scanning.")
             sys.exit(1)
-        ip_addresses = [generate_ip() for _ in range(args.n)]
 
     with alive_bar(args.n or len(ip_addresses), title="[Scanning Internet]", enrich_print=False, bar="blocks") as instance_bar:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
-            for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
-                if result:
-                    found_targets.append(result)
-                instance_bar()
+        if not args.host and not args.f:
+            while len(found_targets) < args.n:
+                ip_addresses = [generate_ip() for _ in range(args.t * 10)]
+                with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
+                    for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
+                        if result:
+                            found_targets.append(result)
+                        instance_bar()
 
-    if args.o:
-        with open(args.o, 'a') as file:
-            for target in found_targets:
-                file.write(f"{target}\n")
+                if args.o:
+                    with open(args.o, 'a') as file:
+                        for target in found_targets:
+                            file.write(f"{target}\n")
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
+                for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
+                    if result:
+                        found_targets.append(result)
+                    instance_bar()
+
+            if args.o:
+                with open(args.o, 'a') as file:
+                    for target in found_targets:
+                        file.write(f"{target}\n")
 
     for targ in found_targets[:args.n]:
         print(targ)
