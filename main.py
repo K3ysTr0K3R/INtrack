@@ -39,10 +39,13 @@ from lib.instances.ncast import check_ncast
 from lib.instances.jira import check_jira
 from lib.instances.joomla import check_joomla
 from lib.instances.zimbra import check_zimbra
+from lib.instances.apache import check_apache
+from lib.instances.php import php
 
 from lib.network.telnet_scanner import scan_telnet
 from lib.network.rdp_scanner import scan_rdp
 from lib.network.adb_misconfig import check_adb
+from lib.network.port_scanner import port_scanner
 from lib.network.network_handler import get_ips_from_subnet
 
 from lib.vulns.CVE_2016_6277 import check_CVE_2016_6277
@@ -56,7 +59,14 @@ from lib.vulns.CVE_2021_36260 import check_CVE_2021_36260
 from lib.vulns.CVE_2017_5487 import check_CVE_2017_5487
 from lib.vulns.CVE_2017_7925 import check_CVE_2017_7925
 from lib.vulns.CVE_2022_40684 import check_CVE_2022_40684
+from lib.vulns.CVE_2017_7269 import check_CVE_2017_7269
+from lib.vulns.CVE_2021_38647 import check_CVE_2021_38647
+from lib.vulns.CVE_2021_34473 import check_CVE_2021_34473
+from lib.vulns.CVE_2023_23752 import check_CVE_2023_23752
+from lib.vulns.CVE_2015_1635 import check_CVE_2015_1635
 from lib.vulns.directory_traversal_scanner import traversal
+
+from lib.workflows.microsoft_workflow import check_microsoft_workflow
 
 from lib.color_handler import print_green, print_blue, print_red, print_yellow
 
@@ -108,10 +118,13 @@ def process_ip(ip, args):
         ('CVE-2021-36260', check_CVE_2021_36260),
         ('CVE-2017-5487', check_CVE_2017_5487),
         ('CVE-2017-7925', check_CVE_2017_7925),
-        ('CVE_2024_0305', check_CVE_2024_0305),
-        ('CVE_2016_6277', check_CVE_2016_6277),
-        ('CVE_2019_1653', check_CVE_2019_1653),
-        ('CVE_2022_40684', check_CVE_2022_40684),
+        ('CVE-2024-0305', check_CVE_2024_0305),
+        ('CVE-2016-6277', check_CVE_2016_6277),
+        ('CVE-2019-1653', check_CVE_2019_1653),
+        ('CVE-2022-40684', check_CVE_2022_40684),
+        ('CVE-2021-34473', check_CVE_2021_34473),
+        ('CVE-2023-23752', check_CVE_2023_23752),
+        ('CVE-2015-1635', check_CVE_2015_1635),
         ('traversal', traversal)
     ]
 
@@ -126,7 +139,9 @@ def process_ip(ip, args):
         ('ncast', check_ncast),
         ('jira', check_jira),
         ('joomla', check_joomla),
-        ('zimbra', check_zimbra)
+        ('zimbra', check_zimbra),
+        ('apache', check_apache),
+        ('php', php)
     ]
 
     exposure_checks = [
@@ -138,7 +153,8 @@ def process_ip(ip, args):
     network_checks = [
         ('telnet', scan_telnet),
         ('rdp', scan_rdp),
-        ('adb-misconfig', check_adb)
+        ('adb-misconfig', check_adb),
+        ('network', port_scanner)
     ]
 
     iot_checks = [
@@ -154,6 +170,10 @@ def process_ip(ip, args):
 
     miscellaneous_checks = [
         ('dir-listing', check_dir_listing)
+    ]
+
+    workflow_scans = [
+        ('microsoft', check_microsoft_workflow)
     ]
 
     if args.worm and lhost and lport:
@@ -216,6 +236,70 @@ def read_targets_from_file(filename):
         sys.exit(1)
     return ips
 
+def list_scanners():
+    print_green("Available Scanners:")
+    print_blue("Worms:")
+    print_yellow("- vscode-sftp")
+    print_yellow("- microsoft")
+    print_yellow("- tomcat")
+    print_yellow("- hadoop")
+
+    print_blue("Exposures:")
+    print_yellow("- robots-txt")
+    print_yellow("- security-txt")
+    print_yellow("- sitemap")
+
+    print_blue("Instances:")
+    print_yellow("- wordpress")
+    print_yellow("- microsoft")
+    print_yellow("- server")
+    print_yellow("- webmin")
+    print_yellow("- thinkphp")
+    print_yellow("- weblogic")
+    print_yellow("- drupal")
+    print_yellow("- ncast")
+    print_yellow("- jira")
+    print_yellow("- joomla")
+    print_yellow("- zimbra")
+    print_yellow("- apache")
+
+    print_blue("Network Checks:")
+    print_yellow("- telnet")
+    print_yellow("- rdp")
+    print_yellow("- adb-misconfig")
+    print_yellow("- network")
+
+    print_blue("IoT Checks:")
+    print_yellow("- gargoyle")
+    print_yellow("- gpon")
+    print_yellow("- webcamxp")
+    print_yellow("- netgear")
+    print_yellow("- hikvision")
+    print_yellow("- cisco")
+    print_yellow("- epmp")
+    print_yellow("- network-camera")
+
+    print_blue("Miscellaneous Checks:")
+    print_yellow("- dir-listing")
+
+    print_blue("Vulnerabilities:")
+    print_yellow("- CVE-2016-6277")
+    print_yellow("- CVE-2024-0305")
+    print_yellow("- CVE-2018-13379")
+    print_yellow("- CVE-2017-7921")
+    print_yellow("- CVE-2019-17382")
+    print_yellow("- CVE-2019-1653")
+    print_yellow("- CVE-2022-47945")
+    print_yellow("- CVE-2021-36260")
+    print_yellow("- CVE-2017-5487")
+    print_yellow("- CVE-2017-7925")
+    print_yellow("- CVE-2022-40684")
+    print_yellow("- CVE-2021-34473")
+    print_yellow("- traversal")
+
+    print_blue("Workflow Scans:")
+    print_yellow("- microsoft")
+
 def main():
     parser = argparse.ArgumentParser(description="INtrack - Internet Crawler")
     parser.add_argument("-host", type=str, help="Specify a single target IP or subnet range of IPs to scan /24, /23, /22, etc.")
@@ -232,11 +316,17 @@ def main():
     parser.add_argument("-exposure", type=str, help="Used to detect exposure files.")
     parser.add_argument("-iot", type=str, help="Used to detect IoT devices.")
     parser.add_argument("-miscellaneous", type=str, help="Used for miscellaneous checks.")
+    parser.add_argument("-workflows", type=str, help="Run workflow scans on your targets.")
     parser.add_argument("-network", type=str, help="Used for network scans.")
     parser.add_argument("-timeout", type=int, default=10, help="Timeout seconds for web requests.")
     parser.add_argument("-spider", type=str, help="Specify the subnet range to scan if a result is found (e.g., /20, /24).")
+    parser.add_argument("-list", action="store_true", help="List available scanners and checks")
 
     args = parser.parse_args()
+
+    if args.list:
+        list_scanners()
+        sys.exit(0)
 
     found_targets = []
 
