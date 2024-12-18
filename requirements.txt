@@ -1,5 +1,0 @@
-alive_progress
-urllib3
-argparse
-mmh3
-requests
