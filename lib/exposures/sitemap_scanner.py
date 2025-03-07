@@ -17,7 +17,7 @@ def check_sitemap(ip, ports=None, timeout=5):
 				try:
 					response = requests.get(url, verify=False, timeout=timeout, headers=headers)
 					if "sitemap>" in response.text:
-						print_colour(f"Sitemap file found: {url}")
+						print_colour(f"[+] Sitemap file found: {url}")
 						return True
 				except requests.RequestException:
 					continue
