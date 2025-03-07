@@ -19,7 +19,7 @@ def check_CVE_2017_7921(ip, ports=None, timeout=5):
             try:
                 response = requests.get(url, headers=headers, timeout=timeout, verify=False)
                 if matcher in response.text:
-                    print_colour(f"The target is vulnerable to CVE-2017-7921 : {url}")
+                    print_colour(f"[+] The target is vulnerable to CVE-2017-7921 : {url}")
                     return True
             except requests.RequestException:
                 continue
