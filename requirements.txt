@@ -3,3 +3,6 @@ urllib3
 argparse
 mmh3
 requests
+paramiko
+rich
+netaddr
