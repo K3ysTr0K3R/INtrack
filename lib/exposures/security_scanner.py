@@ -21,7 +21,7 @@ def check_security(ip, ports=None, timeout=5):
 				try:
 					response = requests.get(url, timeout=timeout, verify=False, headers=headers)
 					if any(matchers in response.text for matchers in matcher):
-						print_colour(f"Security file found: {url}")
+						print_colour(f"[+] Security file found: {url}")
 						return True
 				except requests.RequestException:
 					continue
