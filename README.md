@@ -10,7 +10,7 @@
 
 ## Usage
 
-**git clone https://github.com/esistdini/INtrack**
+**git clone https://github.com/K3ysTr0K3R/INtrack.git**
 
 **cd INtrack**
 
