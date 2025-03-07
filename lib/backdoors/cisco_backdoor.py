@@ -24,10 +24,10 @@ def cisco_backdoor(ip, ports=None, timeout=5):
                     response_get = requests.get(url, verify=False, timeout=timeout, headers=headers)
                     response_post = requests.post(url, verify=False, timeout=timeout, headers=headers)
                     if re.search(r'webui-centerpanel-title', response_get.text) or re.search(r'^([a-f0-9]{18})\s*$', response_get.text):
-                        print_colour(f"Cisco backdoor detected: {url}")
+                        print_colour(f"[+] Cisco backdoor detected: {url}")
                         return True
                     if re.search(r'webui-centerpanel-title', response_post.text) or re.search(r'^([a-f0-9]{18})\s*$', response_post.text):
-                        print_colour(f"Cisco backdoor detected: {url}")
+                        print_colour(f"[+] Cisco backdoor detected: {url}")
                         return True
                     except requests.RequestException:
                         continue
