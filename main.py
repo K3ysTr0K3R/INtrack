@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+from rich.console import Console
 import argparse
 import random
 import socket
@@ -93,7 +94,20 @@ from lib.color_handler import print_colour
 
 from lib.hostname_handler import get_hostname
 
+console = Console()
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def ascii_art():
+	print("")
+	console.print("[bold bright_yellow]██╗███╗   ██╗████████╗██████╗  █████╗  ██████╗██╗  ██╗[/bold bright_yellow]")
+	console.print("[bold bright_yellow]██║████╗  ██║╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝[/bold bright_yellow]")
+	console.print("[bold bright_yellow]██║██╔██╗ ██║   ██║   ██████╔╝███████║██║     █████╔╝[/bold bright_yellow]")
+	console.print("[bold bright_yellow]██║██║╚██╗██║   ██║   ██╔══██╗██╔══██║██║     ██╔═██╗[/bold bright_yellow]")
+	console.print("[bold bright_yellow]██║██║ ╚████║   ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗[/bold bright_yellow]")
+	console.print("[bold bright_yellow]╚═╝╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝[/bold bright_yellow]") 
+	print("")
+	print_colour("[!] Coded By: K3ysTr0K3R")
 
 def generate_ip():
 	return f"{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}"
@@ -156,7 +170,6 @@ def process_ip(ip, args):
 		for backdoor_name, check_function in [
 			('antsword', antsword_backdoor)
 		]:
-    		  
 			if backdoor == backdoor_name and check_function(ip, open_ports, args.timeout):
 				return ip
 
@@ -179,7 +192,7 @@ def process_ip(ip, args):
 			('CVE-2024-10914', check_CVE_2024_10914),
 			('traversal', traversal)
 		]:
-			if vuln == check_name and check_function(ip, open_ports, args.timeout):
+			if vuln.upper() == check_name.upper() and check_function(ip, open_ports, args.timeout):
 				return ip
 
 	for instance in instance_checks:
@@ -352,11 +365,12 @@ def list_scanners():
 	print_colour("[!] - CVE-2015-1635")
 	print_colour("[!] - CVE-2024-10914")
 	print_colour("[!] - traversal")
-	
+
 	print_colour("[*] Workflow Scans:")
 	print_colour("[!] - microsoft")
 
 def main():
+	ascii_art()
 	parser = argparse.ArgumentParser(description="INtrack - Internet Crawler")
 	parser.add_argument("-host", type=str, help="Specify a single target IP or subnet range of IPs to scan /24, /23, /22, etc.")
 	parser.add_argument("-f", type=str, help="Specify a file containing target IPs.")
