@@ -16,7 +16,7 @@ def check_CVE_2021_36260(ip, ports=None, timeout=5):
             try:
                 response = requests.put(url, data=data, timeout=timeout, verify=False)
                 if "GSHWHJDjhwhdJHDWjwhdHikVissopndJHXBWGDAUWDGGGGGGGGGGGGGG" in response.text:
-                    print_colour(f"The target is vulnerable to CVE-2021-36260 : {url}")
+                    print_colour(f"[+] The target is vulnerable to CVE-2021-36260 : {url}")
                     return True
             except requests.RequestException:
                 continue
