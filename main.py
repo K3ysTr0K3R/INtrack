@@ -84,10 +84,6 @@ from lib.vulns.microsoft.CVE_2015_1635 import check_CVE_2015_1635
 from lib.vulns.microsoft.CVE_2021_38647 import check_CVE_2021_38647
 from lib.vulns.microsoft.CVE_2021_34473 import check_CVE_2021_34473
 
-from lib.vulns.dlink.CVE_2024_10914 import check_CVE_2024_10914
-
-from lib.vulns.directory_traversal_scanner import traversal
-
 from lib.workflows.microsoft_workflow import check_microsoft_workflow
 
 from lib.color_handler import print_colour
