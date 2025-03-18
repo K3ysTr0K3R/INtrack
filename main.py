@@ -19,6 +19,7 @@ from lib.backdoors.antsword_backdoor import antsword_backdoor
 from lib.exposures.robots_scanner import check_robots
 from lib.exposures.security_scanner import check_security
 from lib.exposures.sitemap_scanner import check_sitemap
+from lib.exposures.api_docs_scanner import check_api_docs
 
 from lib.miscellaneous.dir_listing import check_dir_listing
 
@@ -226,7 +227,8 @@ def process_ip(ip, args):
         for exposure_name, check_function in [
             ('robots-txt', check_robots),
             ('security-txt', check_security),
-            ('sitemap', check_sitemap)
+            ('sitemap', check_sitemap),
+            ('api-docs', check_api_docs)
         ]:
             if exposure == exposure_name and check_function(ip, open_ports, args.timeout):
                 return ip
