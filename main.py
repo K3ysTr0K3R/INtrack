@@ -48,7 +48,7 @@ from lib.instances.apache import check_apache
 from lib.instances.php import php
 from lib.instances.webdav_scanner import check_webdav
 from lib.instances.moveit import check_moveit
-
+from lib.instances.nginx import check_nginx
 from lib.network.telnet_scanner import scan_telnet
 from lib.network.rdp_scanner import scan_rdp
 from lib.network.rtsp_mangler import rtsp_checks
@@ -218,7 +218,8 @@ def process_ip(ip, args):
             ('apache', check_apache),
             ('php', php),
             ('webdav', check_webdav),
-            ('moveit', check_moveit)
+            ('moveit', check_moveit),
+            ('nginx', check_nginx)
         ]:
             if instance == instance_name and check_function(ip, open_ports, args.timeout):
                 return ip
