@@ -93,8 +93,6 @@ from lib.workflows.microsoft_workflow import check_microsoft_workflow
 
 from lib.color_handler import print_colour
 
-from lib.color_handler import print_red
-
 from lib.hostname_handler import get_hostname
 
 from lib.http_handler import http_https
