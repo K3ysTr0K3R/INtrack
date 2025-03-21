@@ -15,6 +15,10 @@ from lib.worms.tomcat_worm import exploit_CVE_2017_12615_CVE_2017_12617
 from lib.worms.hadoop_worm import hadoop_worm
 
 from lib.backdoors.antsword_backdoor import antsword_backdoor
+from lib.backdoors.php_backdoor import php_backdoor
+from lib.backdoors.mikrotik_backdoor import mikrotik_backdoor
+from lib.backdoors.dlink_backdoor import dlink_backdoor
+from lib.backdoors.cisco_backdoor import cisco_backdoor
 
 from lib.exposures.robots_scanner import check_robots
 from lib.exposures.security_scanner import check_security
@@ -88,6 +92,8 @@ from lib.vulns.microsoft.CVE_2021_34473 import check_CVE_2021_34473
 from lib.workflows.microsoft_workflow import check_microsoft_workflow
 
 from lib.color_handler import print_colour
+
+from lib.color_handler import print_red
 
 from lib.hostname_handler import get_hostname
 
@@ -175,7 +181,11 @@ def process_ip(ip, args):
 
     for backdoor in backdoor_checks:
         for backdoor_name, check_function in [
-            ('antsword', antsword_backdoor)
+            ('antsword', antsword_backdoor),
+            ('php', php_backdoor),
+            ('mikrotik', mikrotik_backdoor),
+            ('dlink', dlink_backdoor),
+            ('cisco', cisco_backdoor)
         ]:
             if backdoor == backdoor_name and check_function(ip, open_ports, args.timeout):
                 return ip
@@ -195,9 +205,7 @@ def process_ip(ip, args):
             ('CVE-2022-40684', check_CVE_2022_40684),
             ('CVE-2021-34473', check_CVE_2021_34473),
             ('CVE-2023-23752', check_CVE_2023_23752),
-            ('CVE-2015-1635', check_CVE_2015_1635),
-            ('CVE-2024-10914', check_CVE_2024_10914),
-            ('traversal', traversal)
+            ('CVE-2015-1635', check_CVE_2015_1635)
         ]:
             if vuln.upper() == check_name.upper() and check_function(ip, open_ports, args.timeout):
                 return ip
