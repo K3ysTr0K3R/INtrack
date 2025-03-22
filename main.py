@@ -8,7 +8,7 @@ import socket
 import urllib3
 import concurrent.futures
 from alive_progress import alive_bar
-
+import subprocess
 from lib.worms.vscode_sftp_worm import crawl_vscode_sftp
 from lib.worms.microsoft_worm import microsoft_worm
 from lib.worms.tomcat_worm import exploit_CVE_2017_12615_CVE_2017_12617
@@ -409,8 +409,26 @@ def main():
     parser.add_argument("-probe", action="store_true", help="Used for probing hosts for HTTP/HTTPS")
     parser.add_argument("-spider", type=str, help="Specify the subnet range to scan if a result is found (e.g., /20, /24).")
     parser.add_argument("-list", action="store_true", help="List available scanners and checks")
+    parser.add_argument("-update", action="store_true", help="Update INtrack")
 
     args = parser.parse_args()
+
+    def update_intrack():
+        print_colour("[*] Checking for updates...")
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            if "Already up to date" in result.stdout:
+                print_colour("[*] INtrack is already up to date.")
+            else:
+                print_colour("[*] INtrack has been updated successfully.")
+        else:
+            print_colour("[*] Failed to update INtrack.")
+            print_colour(f"[!] Error: {result.stderr}")
+
+    if args.update:
+        update_intrack()
+        sys.exit(0)
 
     if args.list:
         list_scanners()
