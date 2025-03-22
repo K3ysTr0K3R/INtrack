@@ -1,5 +1,5 @@
 import requests
-from lib.headers.header_handler import user_agents
+from lib.headers.headers_handler import user_agents
 from lib.color_handler import print_colour
 
 def fatpipe_backdoor(ip, ports=None, timeout=10):
