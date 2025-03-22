@@ -1,7 +1,7 @@
 import random
 
 def load_user_agents():
-    with open('lib/headers/user_agents.txt', 'r') as file:
+    with open('lib/headers/user_agents.txt' ,'r', encoding="utf-8") as file:
         return [line.strip() for line in file]
 
 def user_agents():
