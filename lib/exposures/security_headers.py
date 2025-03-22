@@ -52,7 +52,7 @@ def check_security_headers(ip, ports=None, timeout=5):
                 url = f"{protocol}://{ip}{port}"
                 try:
                     response = requests.get(url, headers=headers, verify=False, timeout=timeout)
-                    if security_headers not in response.headers:
+                    if header not in response.headers:
                         print_colour(f"[+] Security header missing: {header}")
                         print_colour(f"[+] Definition: {header_definitions(header)}")
                         return True
