@@ -19,7 +19,7 @@ from lib.backdoors.php_backdoor import php_backdoor
 from lib.backdoors.mikrotik_backdoor import mikrotik_backdoor
 from lib.backdoors.dlink_backdoor import dlink_backdoor
 from lib.backdoors.cisco_backdoor import cisco_backdoor
-
+from lib.backdoors.webshell_backdoor import webshell_backdoor
 from lib.exposures.robots_scanner import check_robots
 from lib.exposures.security_scanner import check_security
 from lib.exposures.sitemap_scanner import check_sitemap
@@ -183,7 +183,8 @@ def process_ip(ip, args):
             ('php', php_backdoor),
             ('mikrotik', mikrotik_backdoor),
             ('dlink', dlink_backdoor),
-            ('cisco', cisco_backdoor)
+            ('cisco', cisco_backdoor),
+            ('webshell', webshell_backdoor)
         ]:
             if backdoor == backdoor_name and check_function(ip, open_ports, args.timeout):
                 return ip
