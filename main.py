@@ -8,7 +8,7 @@ import socket
 import urllib3
 import concurrent.futures
 from alive_progress import alive_bar
-
+import subprocess
 from lib.worms.vscode_sftp_worm import crawl_vscode_sftp
 from lib.worms.microsoft_worm import microsoft_worm
 from lib.worms.tomcat_worm import exploit_CVE_2017_12615_CVE_2017_12617
@@ -19,11 +19,13 @@ from lib.backdoors.php_backdoor import php_backdoor
 from lib.backdoors.mikrotik_backdoor import mikrotik_backdoor
 from lib.backdoors.dlink_backdoor import dlink_backdoor
 from lib.backdoors.cisco_backdoor import cisco_backdoor
+from lib.backdoors.webshell_backdoor import webshell_backdoor
 
 from lib.exposures.robots_scanner import check_robots
 from lib.exposures.security_scanner import check_security
 from lib.exposures.sitemap_scanner import check_sitemap
 from lib.exposures.api_docs_scanner import check_api_docs
+from lib.exposures.security_headers import check_security_headers
 
 from lib.miscellaneous.dir_listing import check_dir_listing
 
@@ -183,7 +185,8 @@ def process_ip(ip, args):
             ('php', php_backdoor),
             ('mikrotik', mikrotik_backdoor),
             ('dlink', dlink_backdoor),
-            ('cisco', cisco_backdoor)
+            ('cisco', cisco_backdoor),
+            ('webshell', webshell_backdoor)
         ]:
             if backdoor == backdoor_name and check_function(ip, open_ports, args.timeout):
                 return ip
@@ -235,7 +238,8 @@ def process_ip(ip, args):
             ('robots-txt', check_robots),
             ('security-txt', check_security),
             ('sitemap', check_sitemap),
-            ('api-docs', check_api_docs)
+            ('api-docs', check_api_docs),
+            ('security-headers', check_security_headers)
         ]:
             if exposure == exposure_name and check_function(ip, open_ports, args.timeout):
                 return ip
@@ -409,8 +413,26 @@ def main():
     parser.add_argument("-probe", action="store_true", help="Used for probing hosts for HTTP/HTTPS")
     parser.add_argument("-spider", type=str, help="Specify the subnet range to scan if a result is found (e.g., /20, /24).")
     parser.add_argument("-list", action="store_true", help="List available scanners and checks")
+    parser.add_argument("-update", action="store_true", help="Update INtrack")
 
     args = parser.parse_args()
+
+    def update_intrack():
+        print_colour("[*] Checking for updates...")
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            if "Already up to date" in result.stdout:
+                print_colour("[*] INtrack is already up to date.")
+            else:
+                print_colour("[*] INtrack has been updated successfully.")
+        else:
+            print_colour("[*] Failed to update INtrack.")
+            print_colour(f"[!] Error: {result.stderr}")
+
+    if args.update:
+        update_intrack()
+        sys.exit(0)
 
     if args.list:
         list_scanners()
