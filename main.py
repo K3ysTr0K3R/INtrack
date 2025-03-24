@@ -26,7 +26,7 @@ from lib.exposures.security_scanner import check_security
 from lib.exposures.sitemap_scanner import check_sitemap
 from lib.exposures.api_docs_scanner import check_api_docs
 from lib.exposures.security_headers import check_security_headers
-
+from lib.exposures.sensitive_endpoint_scanner import check_sensitive_endpoints
 from lib.miscellaneous.dir_listing import check_dir_listing
 
 from lib.iot.gargoyle_scanner import check_gargoyle
@@ -114,8 +114,70 @@ def ascii_art():
     print("")
     print_colour("[!] Coded By: K3ysTr0K3R")
 
+def is_reserved_ip(ip):
+    """Check if an IP address is in a reserved range"""
+    # Convert IP string to integer for easier comparison
+    octets = list(map(int, ip.split('.')))
+    ip_int = (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3]
+    
+    # Reserved ranges to skip
+    reserved_ranges = [
+        (0x00000000, 0x00FFFFFF),    # 0.0.0.0/8 - Local Identification
+        (0x0A000000, 0x0AFFFFFF),    # 10.0.0.0/8 - Private Network
+        (0x64400000, 0x647FFFFF),    # 100.64.0.0/10 - Shared Address Space
+        (0x7F000000, 0x7FFFFFFF),    # 127.0.0.0/8 - Loopback
+        (0xA9FE0000, 0xA9FEFFFF),    # 169.254.0.0/16 - Link Local
+        (0xAC100000, 0xAC1FFFFF),    # 172.16.0.0/12 - Private Network
+        (0xC0000000, 0xC00000FF),    # 192.0.0.0/24 - IETF Protocol Assignments
+        (0xC0000200, 0xC00002FF),    # 192.0.2.0/24 - TEST-NET-1
+        (0xC0A80000, 0xC0A8FFFF),    # 192.168.0.0/16 - Private Network
+        (0xC6120000, 0xC613FFFF),    # 198.18.0.0/15 - Network Interconnect
+        (0xC6336400, 0xC63364FF),    # 198.51.100.0/24 - TEST-NET-2
+        (0xCB007100, 0xCB0071FF),    # 203.0.113.0/24 - TEST-NET-3
+        (0xE0000000, 0xEFFFFFFF),    # 224.0.0.0/4 - Multicast
+        (0xF0000000, 0xFFFFFFFF),    # 240.0.0.0/4 - Reserved
+    ]
+    
+    # Check if IP is in any reserved range
+    for start, end in reserved_ranges:
+        if start <= ip_int <= end:
+            return True
+    
+    return False
+
+def generate_weighted_octet():
+    """Generate an octet with higher probability of common server IPs"""
+    # Weighted distribution favoring common server IP patterns
+    weights = [
+        (1, 25, 0.2),    # Lower range less common
+        (25, 100, 0.4),  # Mid-low range more common
+        (100, 200, 0.3), # Mid-high range common
+        (200, 255, 0.1)  # High range less common
+    ]
+    
+    # Pick a range based on weights
+    choice = random.random()
+    cumulative = 0
+    for start, end, weight in weights:
+        cumulative += weight
+        if choice <= cumulative:
+            return random.randint(start, end)
+    
+    return random.randint(1, 254)  # Fallback
+
 def generate_ip():
-    return f"{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}"
+    """Generate a random public IP address, avoiding reserved ranges"""
+    max_attempts = 10  # Limit attempts to avoid infinite loops
+    
+    for _ in range(max_attempts):
+        # Generate random IP with weighted distribution
+        ip = f"{generate_weighted_octet()}.{generate_weighted_octet()}.{generate_weighted_octet()}.{generate_weighted_octet()}"
+        
+        if not is_reserved_ip(ip):
+            return ip
+    
+    # Fallback to a common range if we couldn't find a valid IP
+    return f"{random.randint(50, 70)}.{random.randint(30, 150)}.{random.randint(1, 254)}.{random.randint(1, 254)}"
 
 def check_port(ip, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -239,7 +301,8 @@ def process_ip(ip, args):
             ('security-txt', check_security),
             ('sitemap', check_sitemap),
             ('api-docs', check_api_docs),
-            ('security-headers', check_security_headers)
+            ('security-headers', check_security_headers),
+            ('sensitive-endpoints', check_sensitive_endpoints)
         ]:
             if exposure == exposure_name and check_function(ip, open_ports, args.timeout):
                 return ip
