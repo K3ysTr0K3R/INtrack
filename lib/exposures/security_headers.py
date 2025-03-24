@@ -36,7 +36,6 @@ def check_security_headers(ip, ports=None, timeout=5):
     security_headers = [
         "Strict-Transport-Security",
         "X-Frame-Options",
-        "Strict-Transport-Security",
         "X-XSS-Protection",
         "X-Content-Type-Options",
         "Referrer-Policy",
