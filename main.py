@@ -7,7 +7,7 @@ import random
 import socket
 import urllib3
 import concurrent.futures
-from alive_progress import alive_bar
+from alive_progress import alive_bar, config_handler
 import subprocess
 from lib.worms.vscode_sftp_worm import crawl_vscode_sftp
 from lib.worms.microsoft_worm import microsoft_worm
@@ -463,6 +463,14 @@ def list_scanners():
 
 def main():
     ascii_art()
+    
+    # Configure global progress bar settings
+    config_handler.set_global(
+        spinner='dots_waves',
+        force_tty=True,
+        dual_line=True
+    )
+    
     parser = argparse.ArgumentParser(description="INtrack - Internet Crawler")
     parser.add_argument("-host", type=str, help="Specify a single target IP or subnet range of IPs to scan /24, /23, /22, etc.")
     parser.add_argument("-f", type=str, help="Specify a file containing target IPs.")
@@ -487,6 +495,7 @@ def main():
     parser.add_argument("-spider", type=str, help="Specify the subnet range to scan if a result is found (e.g., /20, /24).")
     parser.add_argument("-list", action="store_true", help="List available scanners and checks")
     parser.add_argument("-update", action="store_true", help="Update INtrack")
+    parser.add_argument("-bar-style", type=str, default="smooth", choices=["smooth", "blocks", "bubbles", "solid", "classic", "brackets"], help="Progress bar style")
 
     args = parser.parse_args()
 
@@ -530,29 +539,98 @@ def main():
         count = args.n or 0
         print_colour(f"[*] Scanning {count} random targets from the internet")
 
+    # Print active scan details
+    active_scans = []
+    if args.backdoor: active_scans.append(f"Backdoor checks: {args.backdoor}")
+    if args.vuln: active_scans.append(f"Vulnerability checks: {args.vuln}")
+    if args.instance: active_scans.append(f"Instance checks: {args.instance}")
+    if args.exposure: active_scans.append(f"Exposure checks: {args.exposure}")
+    if args.iot: active_scans.append(f"IoT checks: {args.iot}")
+    if args.miscellaneous: active_scans.append(f"Miscellaneous checks: {args.miscellaneous}")
+    if args.network: active_scans.append(f"Network checks: {args.network}")
+    if args.worm: active_scans.append(f"Worm checks: {args.worm}")
+    
+    if active_scans:
+        print_colour("[*] Active scan modules:")
+        for scan in active_scans:
+            print_colour(f"    - {scan}")
+    else:
+        print_colour("[*] No specific scan modules activated - checking open ports only")
+    
+    print_colour(f"[*] Using {args.t} threads with {args.timeout}s timeout")
+    if args.o:
+        print_colour(f"[*] Results will be saved to: {args.o}")
+    print_colour("----------------------------------------")
+
     output_file = open(args.o, 'a') if args.o else None
 
-    with alive_bar(args.n or len(ip_addresses), title="[Scanning Internet]", enrich_print=False, bar="blocks") as instance_bar:
-        if not args.host and not args.f:
-            while len(found_targets) < args.n:
+    # Different progress bar handling for random scanning vs subnet/file scanning
+    if not args.host and not args.f:
+        # Random internet scanning - show progress based on found targets
+        with alive_bar(
+            args.n,  # Use the target count 
+            title="Finding targets",
+            enrich_print=False,
+            bar=args.bar_style,
+            stats=True,
+            unit=" targets"
+        ) as progress_bar:
+            checked_count = 0
+            total_checked = 0
+            found_count = 0
+            
+            while found_count < args.n:
+                checked_count = 0
                 ip_addresses = [generate_ip() for _ in range(args.t * 10)]
+                
                 with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
                     for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
+                        checked_count += 1
                         if result:
                             found_targets.append(result)
+                            found_count += 1
                             if output_file:
                                 output_file.write(f"{result}\n")
                                 output_file.flush()
-                        instance_bar()
-        else:
+                            # Update progress bar
+                            progress_bar.title(f"Finding targets [{found_count}/{args.n}] - Checked {total_checked + checked_count}")
+                            progress_bar()  # Increment by 1
+                            if found_count >= args.n:
+                                break
+                
+                total_checked += checked_count
+                
+            print("")  # Ensure we're on a new line
+            print_colour(f"[+] Scan complete - Found {found_count}/{args.n} targets (Checked {total_checked} IPs)")
+    else:
+        # Subnet or file scanning - show progress based on IPs checked
+        total_ips = len(ip_addresses)
+        with alive_bar(
+            total_ips,  # Use the actual IP count
+            title="Scanning targets",
+            enrich_print=False,
+            bar=args.bar_style,
+            stats=True,
+            unit=" IPs"
+        ) as progress_bar:
+            ips_processed = 0
+            found_count = 0
+            
             with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
                 for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
+                    ips_processed += 1
+                    progress_bar.title(f"Scanning IPs [{ips_processed}/{total_ips}] - Found {found_count}")
+                    progress_bar()  # Increment by 1
+                    
                     if result:
                         found_targets.append(result)
+                        found_count += 1
                         if output_file:
                             output_file.write(f"{result}\n")
                             output_file.flush()
-                    instance_bar()
+
+            print("")  # Ensure we're on a new line
+            print_colour(f"[+] Scan complete - Found {found_count} targets")
 
     if output_file:
         output_file.close()
