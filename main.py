@@ -73,6 +73,11 @@ from lib.vulns.hikvision.CVE_2017_7921 import check_CVE_2017_7921
 from lib.vulns.zabbix.CVE_2019_17382 import check_CVE_2019_17382
 
 from lib.vulns.cisco.CVE_2019_1653 import check_CVE_2019_1653
+from lib.vulns.cisco.CVE_2020_3452 import check_CVE_2020_3452
+from lib.vulns.cisco.CVE_2021_1445 import check_CVE_2021_1445
+from lib.vulns.cisco.CVE_2020_3259 import check_CVE_2020_3259
+from lib.vulns.cisco.CVE_2019_2000 import check_CVE_2019_2000
+from lib.vulns.cisco.CVE_2022_20842 import check_CVE_2022_20842
 
 from lib.vulns.thinkphp.CVE_2022_47945 import check_CVE_2022_47945
 
@@ -265,6 +270,11 @@ def process_ip(ip, args):
             ('CVE-2024-0305', check_CVE_2024_0305),
             ('CVE-2016-6277', check_CVE_2016_6277),
             ('CVE-2019-1653', check_CVE_2019_1653),
+            ('CVE-2020-3452', check_CVE_2020_3452),
+            ('CVE-2021-1445', check_CVE_2021_1445),
+            ('CVE-2020-3259', check_CVE_2020_3259),
+            ('CVE-2019-2000', check_CVE_2019_2000),
+            ('CVE-2022-20842', check_CVE_2022_20842),
             ('CVE-2022-40684', check_CVE_2022_40684),
             ('CVE-2021-34473', check_CVE_2021_34473),
             ('CVE-2023-23752', check_CVE_2023_23752),

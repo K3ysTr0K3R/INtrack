@@ -18,6 +18,6 @@ def check_CVE_2019_1653(ip, ports=None, timeout=5):
 				if "sysconfig" in response.text:
 					print_colour(f"The target is vulnerable to CVE-2019-1653 : {url}")
 					return True
-			except request.RequestException:
+			except requests.RequestException:
 				continue
 	return False
