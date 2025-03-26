@@ -96,6 +96,9 @@ from lib.vulns.microsoft.CVE_2015_1635 import check_CVE_2015_1635
 from lib.vulns.microsoft.CVE_2021_38647 import check_CVE_2021_38647
 from lib.vulns.microsoft.CVE_2021_34473 import check_CVE_2021_34473
 
+from lib.vulns.f5bigip.CVE_2022_1388 import check_CVE_2022_1388
+from lib.vulns.f5bigip.CVE_2021_22986 import check_CVE_2021_22986
+
 from lib.workflows.microsoft_workflow import check_microsoft_workflow
 
 from lib.color_handler import print_colour
@@ -278,7 +281,9 @@ def process_ip(ip, args):
             ('CVE-2022-40684', check_CVE_2022_40684),
             ('CVE-2021-34473', check_CVE_2021_34473),
             ('CVE-2023-23752', check_CVE_2023_23752),
-            ('CVE-2015-1635', check_CVE_2015_1635)
+            ('CVE-2015-1635', check_CVE_2015_1635),
+            ('CVE-2022-1388', check_CVE_2022_1388),
+            ('CVE-2021-22986', check_CVE_2021_22986)
         ]:
             if vuln.upper() == check_name.upper() and check_function(ip, open_ports, args.timeout):
                 return ip
@@ -455,7 +460,8 @@ def list_scanners():
     print_colour("[!] - CVE-2021-34473")
     print_colour("[!] - CVE-2023-23752")
     print_colour("[!] - CVE-2015-1635")
-    print_colour("[!] - CVE-2024-10914")
+    print_colour("[!] - CVE-2022-1388")
+    print_colour("[!] - CVE-2021-22986")
     print_colour("[!] - traversal")
 
     print_colour("[*] Workflow Scans:")
