@@ -61,6 +61,7 @@ from lib.network.rtsp_mangler import rtsp_checks
 from lib.network.adb_misconfig import check_adb
 from lib.network.port_scanner import port_scanner
 from lib.network.network_handler import get_ips_from_subnet
+from lib.instances.bigip_scanner import bigip
 
 from lib.vulns.netgear.CVE_2016_6277 import check_CVE_2016_6277
 
@@ -305,7 +306,8 @@ def process_ip(ip, args):
             ('php', php),
             ('webdav', check_webdav),
             ('moveit', check_moveit),
-            ('nginx', check_nginx)
+            ('nginx', check_nginx),
+            ('bigip', bigip)
         ]:
             if instance == instance_name and check_function(ip, open_ports, args.timeout):
                 return ip
@@ -423,6 +425,8 @@ def list_scanners():
     print_colour("[!] - php")
     print_colour("[!] - webdav")
     print_colour("[!] - moveit")
+    print_colour("[!] - nginx")
+    print_colour("[!] - bigip")
     
     print_colour("[*] Network Checks:")
     print_colour("[!] - telnet")
@@ -572,14 +576,15 @@ def main():
 
     # Different progress bar handling for random scanning vs subnet/file scanning
     if not args.host and not args.f:
-        # Random internet scanning - show progress based on found targets
+        # Random internet scanning - show progress based on IPs scanned
+        total_to_scan = args.n * 20  # Estimate of IPs to scan to find targets
         with alive_bar(
-            args.n,  # Use the target count 
-            title="Finding targets",
+            total_to_scan,  # Use estimated IPs to scan instead of target count
+            title="Scanning Internet",
             enrich_print=False,
             bar=args.bar_style,
             stats=True,
-            unit=" targets"
+            unit=" IPs"
         ) as progress_bar:
             checked_count = 0
             total_checked = 0
@@ -587,25 +592,35 @@ def main():
             
             while found_count < args.n:
                 checked_count = 0
-                ip_addresses = [generate_ip() for _ in range(args.t * 10)]
+                batch_size = args.t * 10
+                ip_addresses = [generate_ip() for _ in range(batch_size)]
                 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=args.t) as executor:
                     for result in executor.map(lambda ip: process_ip(ip, args), ip_addresses):
                         checked_count += 1
+                        total_checked += 1
+                        
+                        # Update progress every IP checked
+                        progress_bar.title(f"Scanning Internet [{total_checked}/{total_to_scan}] - Found {found_count}/{args.n}")
+                        progress_bar()
+                        
                         if result:
                             found_targets.append(result)
                             found_count += 1
                             if output_file:
                                 output_file.write(f"{result}\n")
                                 output_file.flush()
-                            # Update progress bar
-                            progress_bar.title(f"Finding targets [{found_count}/{args.n}] - Checked {total_checked + checked_count}")
-                            progress_bar()  # Increment by 1
+                            
                             if found_count >= args.n:
                                 break
                 
-                total_checked += checked_count
-                
+                # If we've scanned more than our estimate, increase it
+                if total_checked >= total_to_scan:
+                    old_total = total_to_scan
+                    total_to_scan = int(total_to_scan * 1.5)  # Increase by 50%
+                    progress_bar.total = total_to_scan
+                    print_colour(f"[*] Increasing scan estimate: {old_total} → {total_to_scan} IPs")
+            
             print("")  # Ensure we're on a new line
             print_colour(f"[+] Scan complete - Found {found_count}/{args.n} targets (Checked {total_checked} IPs)")
     else:
