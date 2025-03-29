@@ -1,0 +1,55 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyo
+*.pwc
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environnements virtuels
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+.mypy_cache/
+.pytest_cache/
+
+# Editor / IDE
+*.swp
+.idea/
+.vscode/
+
+# Pyre type checker
+.pyre/
+
+# Coverage reports
+.coverage
+htmlcov/
+.coverage.*
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/

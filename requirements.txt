@@ -1,8 +1,9 @@
-alive_progress
-urllib3
-argparse
-mmh3
-requests
-paramiko
-rich
-netaddr
+alive_progress==3.1.5
+mmh3==4.1.0
+netaddr==0.8.0
+paramiko==3.4.0
+paramiko_ng==2.8.10
+Requests==2.32.3
+rich==13.9.4
+rich_click==1.6.1
+urllib3==1.26.5
