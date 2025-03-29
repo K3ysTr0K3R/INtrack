@@ -24,12 +24,12 @@ INtrack is a powerful, multi-threaded security scanner and internet crawler desi
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/INtrack.git
-cd INtrack
+# Install pipx if not already installed:
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
 
-# Install dependencies
-pip install -r requirements.txt
+# Install INtrack via pipx directly from GitHub:
+pipx install git+https://github.com/K3ysTr0K3R/INtrack.git
 ```
 
 ## Usage
@@ -37,104 +37,105 @@ pip install -r requirements.txt
 ### Basic Usage
 
 ```bash
-python3 main.py -host 192.168.1.1 -p 80,443
+intrack -H 192.168.1.1 -p 80,443
 ```
 
 ### Scan Types
 
 ```bash
 # Check for WordPress instances
-python3 main.py -host 192.168.1.0/24 -instance wordpress
+intrack -H 192.168.1.0/24 --instance wordpress
 
 # Scan for specific vulnerability
-python3 main.py -host 192.168.1.0/24 -vuln CVE-2017-7921
+intrack -H 192.168.1.0/24 --vuln CVE-2017-7921
 
 # Detect IoT devices
-python3 main.py -host 192.168.1.0/24 -iot hikvision
+intrack -H 192.168.1.0/24 --iot hikvision
 
 # Check for exposed API documentation
-python3 main.py -host 192.168.1.0/24 -exposure api-docs
+intrack -H 192.168.1.0/24 --exposure api-docs
 
 # Search for backdoor implants
-python3 main.py -host 192.168.1.0/24 -backdoor antsword
+intrack -H 192.168.1.0/24 --backdoor antsword
 
 # Run network checks
-python3 main.py -host 192.168.1.0/24 -network telnet
+intrack -H 192.168.1.0/24 --network telnet
 ```
 
 ### Target Selection
 
 ```bash
 # Scan a single host
-python3 main.py -host 192.168.1.1 -instance wordpress
+intrack -H 192.168.1.1 --instance wordpress
 
 # Scan a subnet
-python3 main.py -host 192.168.1.0/24 -instance nginx
+intrack -H 192.168.1.0/24 --instance nginx
 
 # Scan targets from a file
-python3 main.py -f targets.txt -instance jira
+intrack -f targets.txt --instance jira
 
 # Scan random internet hosts
-python3 main.py -n 100 -instance apache
+intrack -n 100 --instance apache
 ```
 
 ### Advanced Options
 
 ```bash
 # Combine multiple scan types
-python3 main.py -host 192.168.1.0/24 -instance "wordpress,jira" -exposure "robots-txt,security-txt"
+intrack -H 192.168.1.0/24 --instance "wordpress,jira" --exposure "robots-txt,security-txt"
 
 # Save results to a file
-python3 main.py -host 192.168.1.0/24 -instance wordpress -o results.txt
+intrack -H 192.168.1.0/24 --instance wordpress -o results.txt
 
 # Resolve hostnames for IPs
-python3 main.py -host 192.168.1.0/24 -hostname -instance wordpress
+intrack -H 192.168.1.0/24 --hostname --instance wordpress
 
 # Use more threads for faster scanning
-python3 main.py -host 192.168.1.0/24 -t 50 -instance wordpress
+intrack -H 192.168.1.0/24 -t 50 --instance wordpress
 
 # Execute worm scripts (requires listener)
-python3 main.py -host 192.168.1.0/24 -worm tomcat -lh 192.168.1.100 -lp 4444
+intrack -H 192.168.1.0/24 --worm tomcat -L 192.168.1.100 -P 4444
 
 # Probe for HTTP/HTTPS services
-python3 main.py -host 192.168.1.0/24 -probe -o webservers.txt
+intrack -H 192.168.1.0/24 --probe -o webservers.txt
 ```
 
 ### List All Available Scanners
 
 ```bash
-python3 main.py -list
+intrack --list
 ```
 
 ### Vulnerabilities
-- Multiple CVEs (use `-list` to see all)
+- Multiple CVEs (use `--list` to see all)
 
 ## Command Line Arguments
 
-| Argument | Description |
-|----------|-------------|
-| `-host` | Specify a single target IP or subnet range |
-| `-f` | Specify a file containing target IPs |
-| `-n` | Number of random targets to find |
-| `-p` | Port(s) to check (default: 80) |
-| `-t` | Number of threads to use (default: 25) |
-| `-o` | Store results into a file |
-| `-lh/lhost` | Add a listening host for reverse shells |
-| `-lp/lport` | A listening port for reverse shells |
-| `-hostname` | Resolve hostnames for IP addresses |
-| `-instance` | Type of instance to check |
-| `-backdoor` | Look for backdoor implants |
-| `-worm` | Enable special script execution |
-| `-vuln` | Enable vulnerability script execution |
-| `-exposure` | Used to detect exposure files |
-| `-iot` | Used to detect IoT devices |
-| `-miscellaneous` | Used for miscellaneous checks |
-| `-workflows` | Run workflow scans on targets |
-| `-network` | Used for network scans |
-| `-timeout` | Timeout seconds for web requests (default: 10) |
-| `-probe` | Used for probing hosts for HTTP/HTTPS |
-| `-spider` | Specify subnet range to scan if a result is found |
-| `-list` | List available scanners and checks |
+| Argument           | Description                                                                                 |
+|--------------------|---------------------------------------------------------------------------------------------|
+| `-H, --host`       | Specify a single target IP or subnet range                                                  |
+| `-f, --file`       | Specify a file containing target IPs                                                         |
+| `-n, --n-targets`  | Number of random targets to find                                                            |
+| `-p, --port`       | Port(s) to check (default: 80)                                                                |
+| `-t, --threads`    | Number of threads to use (default: 25)                                                        |
+| `-o, --output`     | Store results into a file                                                                   |
+| `--lh, --lhost`    | Add a listening host for reverse shells                                                     |
+| `--lp, --lport`    | A listening port for reverse shells                                                         |
+| `--hostname`       | Resolve hostnames for IP addresses                                                          |
+| `--instance`       | Type of instance to check                                                                   |
+| `--backdoor`       | Look for backdoor implants                                                                    |
+| `--worm`           | Enable special script execution                                                             |
+| `--vuln`           | Enable vulnerability script execution                                                       |
+| `--exposure`       | Used to detect exposure files                                                               |
+| `--iot`            | Used to detect IoT devices                                                                    |
+| `--miscellaneous`  | Used for miscellaneous checks                                                               |
+| `--workflows`      | Run workflow scans on targets                                                               |
+| `-N, --network`    | Used for network scans                                                                      |
+| `--timeout`        | Timeout seconds for web requests (default: 10)                                                |
+| `--probe`          | Used for probing hosts for HTTP/HTTPS                                                       |
+| `-s, --spider`     | Specify subnet range to scan if a result is found                                             |
+| `--list`           | List available scanners and checks                                                          |
+| `--bar-style`      | Progress bar style (default 'smooth')                                                       |
 
 ## Legal Disclaimer
 

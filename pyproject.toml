@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intrack"
+version = "0.1.0"
+description = "INtrack - Internet Crawler & Security Scanner"
+authors = [
+  { name = "K3ysTr0K3R", email = "contact@example.com" }
+]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.7"
+
+dependencies = [
+    "alive_progress==3.1.5",
+    "mmh3==4.1.0",
+    "netaddr==0.8.0",
+    "paramiko==3.4.1",
+    "requests==2.32.3",
+    "rich==13.9.4",
+    "rich_click==1.6.1",
+    "urllib3==1.26.5"
+]
+
+[project.scripts]
+intrack = "intrack.main:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"intrack" = ["**/*.txt"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["intrack*"]
+
+[tool.setuptools.package-dir]
+"" = "."
