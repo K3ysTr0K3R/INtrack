@@ -1,0 +1,87 @@
+INTRACK DASHBOARD - SETUP INSTRUCTIONS
+========================================
+
+1. GET THE CODE
+----------------
+Extract the zip, or:
+git clone https://github.com/K3ysTr0K3R/INtrack.git
+cd INtrack
+
+If ownership looks wrong after extracting (e.g. unzipped with sudo):
+sudo chown -R $USER:$USER .
+
+
+2. INSTALL INTRACK ITSELF
+--------------------------
+From the repo root:
+pip install -e .
+
+On Kali/Debian systems you may hit "externally-managed-environment" - if so:
+pip install -e . --break-system-packages
+
+Or use a virtual environment instead:
+python3 -m venv venv
+source venv/bin/activate
+pip install -e .
+
+Verify it worked:
+which intrack
+
+Should print a path like /home/youruser/.local/bin/intrack
+If nothing prints, add that folder to PATH:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+
+3. INSTALL DASHBOARD DEPENDENCIES
+----------------------------------
+cd webui
+pip install -r requirements.txt --break-system-packages
+
+No database setup needed - it's SQLite, built into Python. The
+database file is created automatically on first run.
+
+
+4. (OPTIONAL) INSTALL PROXYCHAINS
+-----------------------------------
+Only needed if you want the Proxychains toggle to work.
+sudo apt install proxychains4        (Debian/Ubuntu/Kali)
+sudo pacman -S proxychains-ng        (Arch)
+
+
+5. RUN IT
+---------
+From webui/:
+python3 app.py
+
+Open http://localhost:5000
+
+IMPORTANT: never run this with sudo. It uses a different Python
+environment than your normal user, which causes ModuleNotFoundError
+even after installing correctly, and it's an unnecessary privilege
+risk for a networked security tool.
+
+
+TROUBLESHOOTING
+----------------
+"ModuleNotFoundError: No module named 'flask_cors'"
+  -> pip install -r requirements.txt wasn't run in webui/, or you
+     ran the app with sudo (different environment).
+
+"The 'intrack' binary isn't on PATH"
+  -> Step 2 didn't finish, or ~/.local/bin isn't on PATH.
+     Run "which intrack" to check.
+
+Port 5000 already in use
+  -> Something else is using it (common on macOS - AirPlay Receiver).
+     Change the port at the bottom of app.py: app.run(debug=True, port=5050)
+
+"Can't reach the backend" shown in the dashboard
+  -> app.py isn't running, or you're on the wrong port.
+
+Proxychains toggle errors out
+  -> proxychains4 needs to be installed at the OS level (step 4).
+     The Python side only prepends it to the command.
+
+
+Full details also included in INSTALL.md at the repo root.
