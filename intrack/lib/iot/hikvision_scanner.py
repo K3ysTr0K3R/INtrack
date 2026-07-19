@@ -30,7 +30,7 @@ def check_hikvision(ip, ports=None, timeout=5):
                         favicon_base64 = base64.b64encode(response.content) if response.content else None
                         favicon_hash = mmh3.hash(favicon_base64.decode('utf-8')) if favicon_base64 else None
                         if response.text and (any(matcher in response.text for matcher in matchers) or "Hikvision-Webs" in server or favicon_hash == target_favicon_hash):
-                            print_colour(f"Hikvision device found: {url}")
+                            print_colour(f"[+] Hikvision device found: {url}")
                             return True
 
                 except requests.RequestException:
