@@ -135,6 +135,7 @@ def parse_ports(port_str):
 def parse_comma_separated_args(arg_string):
     if not arg_string:
         return []
+    # Convert to lowercase for consistent matching
     return [arg.strip().lower() for arg in arg_string.split(",")]
 
 def is_valid_ip(ip):
@@ -201,17 +202,17 @@ def process_ip(ip, kwargs):
     ]): return res
 
     if res := run_checks(vuln_checks, [
-        ("CVE-2017-7921", check_CVE_2017_7921), ("CVE-2019-17382", check_CVE_2019_17382),
-        ("CVE-2018-13379", check_CVE_2018_13379), ("CVE-2022-47945", check_CVE_2022_47945),
-        ("CVE-2021-36260", check_CVE_2021_36260), ("CVE-2017-5487", check_CVE_2017_5487),
-        ("CVE-2017-7925", check_CVE_2017_7925), ("CVE-2024-0305", check_CVE_2024_0305),
-        ("CVE-2016-6277", check_CVE_2016_6277), ("CVE-2019-1653", check_CVE_2019_1653),
-        ("CVE-2020-3452", check_CVE_2020_3452), ("CVE-2021-1445", check_CVE_2021_1445),
-        ("CVE-2020-3259", check_CVE_2020_3259), ("CVE-2019-2000", check_CVE_2019_2000),
-        ("CVE-2022-20842", check_CVE_2022_20842), ("CVE-2022-40684", check_CVE_2022_40684),
-        ("CVE-2021-34473", check_CVE_2021_34473), ("CVE-2023-23752", check_CVE_2023_23752),
-        ("CVE-2015-1635", check_CVE_2015_1635), ("CVE-2022-1388", check_CVE_2022_1388),
-        ("CVE-2021-22986", check_CVE_2021_22986)
+        ("cve-2017-7921", check_CVE_2017_7921), ("cve-2019-17382", check_CVE_2019_17382),
+        ("cve-2018-13379", check_CVE_2018_13379), ("cve-2022-47945", check_CVE_2022_47945),
+        ("cve-2021-36260", check_CVE_2021_36260), ("cve-2017-5487", check_CVE_2017_5487),
+        ("cve-2017-7925", check_CVE_2017_7925), ("cve-2024-0305", check_CVE_2024_0305),
+        ("cve-2016-6277", check_CVE_2016_6277), ("cve-2019-1653", check_CVE_2019_1653),
+        ("cve-2020-3452", check_CVE_2020_3452), ("cve-2021-1445", check_CVE_2021_1445),
+        ("cve-2020-3259", check_CVE_2020_3259), ("cve-2019-2000", check_CVE_2019_2000),
+        ("cve-2022-20842", check_CVE_2022_20842), ("cve-2022-40684", check_CVE_2022_40684),
+        ("cve-2021-34473", check_CVE_2021_34473), ("cve-2023-23752", check_CVE_2023_23752),
+        ("cve-2015-1635", check_CVE_2015_1635), ("cve-2022-1388", check_CVE_2022_1388),
+        ("cve-2021-22986", check_CVE_2021_22986)
     ]): return res
 
     if res := run_checks(instance_checks, [
@@ -538,6 +539,8 @@ def main(**kwargs):
 
     output_file = open_output_file(kwargs['output_file'])
 
+    print_scan_context(kwargs)
+
     if kwargs['filename']:
         ip_addresses = read_targets_from_file(kwargs['filename'])
         print_colour(f"[*] Scanning {len(ip_addresses)} targets from file '{kwargs['filename']}'")
@@ -555,8 +558,6 @@ def main(**kwargs):
     else:
         print_colour(f"[*] Scanning {kwargs['n_targets']} random targets from the internet")
         found = handle_random_scan(kwargs['n_targets'], kwargs, output_file)
-
-    print_scan_context(kwargs)
 
     if output_file:
         output_file.close()
