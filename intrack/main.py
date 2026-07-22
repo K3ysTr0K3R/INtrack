@@ -212,7 +212,9 @@ def process_ip(ip, kwargs):
         ("cve-2022-20842", check_CVE_2022_20842), ("cve-2022-40684", check_CVE_2022_40684),
         ("cve-2021-34473", check_CVE_2021_34473), ("cve-2023-23752", check_CVE_2023_23752),
         ("cve-2015-1635", check_CVE_2015_1635), ("cve-2022-1388", check_CVE_2022_1388),
-        ("cve-2021-22986", check_CVE_2021_22986)
+        ("cve-2021-22986", check_CVE_2021_22986),
+        ("cve-2017-7269", check_CVE_2017_7269),
+        ("cve-2021-38647", check_CVE_2021_38647)
     ]): return res
 
     if res := run_checks(instance_checks, [
@@ -380,6 +382,9 @@ def list_scanners():
         "CVE-2019-17382", "CVE-2019-1653", "CVE-2022-47945", "CVE-2021-36260",
         "CVE-2017-5487", "CVE-2017-7925", "CVE-2022-40684", "CVE-2021-34473",
         "CVE-2023-23752", "CVE-2015-1635", "CVE-2022-1388", "CVE-2021-22986",
+        "CVE-2019-2000", "CVE-2020-3259", "CVE-2020-3452", "CVE-2021-1445",
+        "CVE-2022-20842",
+        "CVE-2017-7269", "CVE-2021-38647",
         "traversal"
     ]:
         print_colour(f"[!] - {vuln}")
