@@ -122,6 +122,29 @@
   }
   .run-btn:hover{background:var(--maroon-bright);}
   .run-btn::before{content:'';width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--off-white);}
+  .stop-btn{
+    background:var(--panel);
+    color:var(--maroon-bright);
+    border:1px solid var(--maroon-bright);
+    padding:11px 22px;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    cursor:pointer;
+    border-radius:2px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .stop-btn:hover{background:var(--maroon-dim);}
+  .stop-btn::before{content:'';width:10px;height:10px;background:var(--maroon-bright);border-radius:1px;flex-shrink:0;}
+  .scan-subopt-chip{
+    padding:5px 11px;font-size:10.5px;letter-spacing:.4px;
+    border:1px solid var(--line);border-radius:20px;color:var(--grey);
+    cursor:pointer;text-transform:none;white-space:nowrap;
+  }
+  .scan-subopt-chip:hover{border-color:var(--maroon-bright);color:var(--off-white);}
+  .scan-subopt-chip.active{border-color:var(--maroon-bright);color:var(--maroon-bright);background:rgba(138,31,31,.12);}
 
   .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;}
   @media(max-width:980px){.grid{grid-template-columns:1fr;}}
@@ -313,7 +336,10 @@
           <div class="mode-opt active" onclick="setMode('ui', this)">UI Mode</div>
           <div class="mode-opt" onclick="setMode('cli', this)">CLI Mode</div>
         </div>
-        <button class="run-btn">Run Scan</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="run-btn" id="run-btn">Run Scan</button>
+          <button class="stop-btn" id="stop-btn" style="display:none;">Stop Scan</button>
+        </div>
       </div>
     </div>
 
@@ -391,11 +417,12 @@
           <div class="scan-type" data-flag="backdoor">Backdoor <span class="tag">--backdoor</span></div>
           <div class="scan-type" data-flag="network">Network <span class="tag">--network</span></div>
           <div class="scan-type" data-flag="worm">Worm <span class="tag">--worm</span></div>
+          <div class="scan-type" data-flag="miscellaneous">Misc <span class="tag">--misc</span></div>
           <div class="scan-type" data-flag="probe">Probe <span class="tag">--probe</span></div>
         </div>
-        <div class="field" style="margin-top:10px;">
-          <label>Scanner Value (e.g. "wordpress", leave blank for --probe)</label>
-          <input type="text" id="f-scanvalue" placeholder="wordpress" value="wordpress" />
+        <div class="field" style="margin-top:12px;" id="scan-suboptions-wrap">
+          <label>Scanner Option</label>
+          <div id="scan-suboptions" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
         </div>
 
         <div class="toggle-row" style="margin-top:14px;">
@@ -602,6 +629,7 @@
             <option value="backdoor">Backdoor</option>
             <option value="network">Network</option>
             <option value="worm">Worm</option>
+            <option value="miscellaneous">Miscellaneous</option>
             <option value="probe">Probe</option>
           </select>
         </div>
@@ -984,7 +1012,9 @@
         document.getElementById('f-hostname').checked = values.hostname === '1';
         if (values.scan_type) {
           const chip = document.querySelector(`.scan-type[data-flag="${values.scan_type}"]`);
-          if (chip) chip.click();
+          if (chip) {
+            chip.click(); // click fires activeScanType update + renderSubOptions
+          }
         }
       }
 
@@ -997,7 +1027,20 @@
         } catch (e) { /* backend offline — dashboard keeps its hardcoded defaults */ }
       })();
 
+      const SCANNER_OPTIONS = {
+        instance:     ['all','wordpress','microsoft','server','webmin','thinkphp','weblogic','drupal','ncast','jira','joomla','zimbra','apache','php','webdav','moveit','nginx','bigip'],
+        vuln:         ['all','cve-2017-7921','cve-2019-17382','cve-2018-13379','cve-2022-47945','cve-2021-36260','cve-2017-5487','cve-2017-7925','cve-2024-0305','cve-2016-6277','cve-2019-1653','cve-2020-3452','cve-2021-1445','cve-2020-3259','cve-2019-2000','cve-2022-20842','cve-2022-40684','cve-2021-34473','cve-2023-23752','cve-2015-1635','cve-2022-1388','cve-2021-22986','cve-2017-7269','cve-2021-38647'],
+        iot:          ['all','gargoyle','gpon','webcamxp','netgear','hikvision','cisco','epmp','network-camera','mikrotik'],
+        exposure:     ['all','robots-txt','security-txt','sitemap','api-docs','security-headers','sensitive-endpoints'],
+        backdoor:     ['all','antsword','php','mikrotik','dlink','cisco','webshell'],
+        network:      ['all','telnet','rtsp','adb-misconfig','network'],
+        worm:         ['all','vscode-sftp','microsoft','tomcat','hadoop'],
+        miscellaneous:['all','dir-listing'],
+        probe:        [],
+      };
+
       let activeScanType = 'instance';
+      let activeScanSubOption = 'all';
       let currentScanId = null;
       let foundCount = 0;
 
@@ -1010,15 +1053,47 @@
         if (mode === 'cli') refreshPreview();
       }
 
+      // ---- scanner sub-option chips renderer ----
+      function renderSubOptions(flag){
+        const wrap = document.getElementById('scan-suboptions-wrap');
+        const container = document.getElementById('scan-suboptions');
+        container.innerHTML = '';
+        const opts = SCANNER_OPTIONS[flag] || [];
+        if(opts.length === 0){
+          wrap.style.display = 'none';
+          activeScanSubOption = null;
+          return;
+        }
+        wrap.style.display = '';
+        // default to 'all' unless already valid
+        if(!opts.includes(activeScanSubOption)) activeScanSubOption = opts[0];
+        opts.forEach(opt => {
+          const chip = document.createElement('span');
+          chip.className = 'scan-subopt-chip' + (opt === activeScanSubOption ? ' active' : '');
+          chip.textContent = opt;
+          chip.addEventListener('click', () => {
+            document.querySelectorAll('.scan-subopt-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            activeScanSubOption = opt;
+            refreshPreview();
+          });
+          container.appendChild(chip);
+        });
+      }
+
       // ---- scanner type selector ----
       document.querySelectorAll('.scan-type').forEach(el => {
         el.addEventListener('click', () => {
           document.querySelectorAll('.scan-type').forEach(o => o.classList.remove('active'));
           el.classList.add('active');
           activeScanType = el.dataset.flag;
+          activeScanSubOption = null; // reset; renderSubOptions sets default
+          renderSubOptions(activeScanType);
           refreshPreview();
         });
       });
+      // initialise sub-options for the default type on page load
+      renderSubOptions(activeScanType);
 
       // ---- target mode selector (Host/Subnet vs File vs Random N) ----
       let activeTargetMode = 'host';
@@ -1054,11 +1129,10 @@
           config.n_targets = document.getElementById('f-ntargets').value.trim();
         }
 
-        const scanValue = document.getElementById('f-scanvalue').value.trim();
         if (activeScanType === 'probe') {
           config.probe = true; // flag-only, no value
-        } else if (scanValue) {
-          config[activeScanType] = scanValue;
+        } else if (activeScanSubOption) {
+          config[activeScanType] = activeScanSubOption;
         }
         if (document.getElementById('f-hostname').checked) {
           config.hostname = true;
@@ -1126,6 +1200,23 @@
         tbody.appendChild(tr);
       }
 
+      function setScanRunning(running){
+        document.getElementById('run-btn').style.display  = running ? 'none' : '';
+        document.getElementById('stop-btn').style.display = running ? '' : 'none';
+      }
+
+      async function stopScan(){
+        if (!currentScanId) return;
+        try {
+          await fetch(`${API}/api/scan/${currentScanId}/stop`, { method: 'POST' });
+          appendLine('ui-console', '[!] Stop requested — waiting for process to terminate…', 'warn');
+          appendLine('cli-console', '[!] Stop requested — waiting for process to terminate…', 'warn');
+          document.getElementById('stat-status').innerText = 'Stopping…';
+        } catch(e) {
+          appendLine('ui-console', 'Could not reach backend to stop scan.', 'warn');
+        }
+      }
+
       async function runScan(){
         const config = gatherConfig();
         if (!config.host && !config.file && !config.n_targets) {
@@ -1140,6 +1231,7 @@
         document.getElementById('stat-found').innerText = '0';
         document.getElementById('stat-status').innerText = 'Starting…';
         document.getElementById('stat-code').innerText = '—';
+        setScanRunning(true);
 
         let startRes;
         try {
@@ -1151,6 +1243,7 @@
         } catch (e) {
           appendLine('ui-console', `Can't reach the backend at ${location.origin}. Is "python app.py" running?`, 'warn');
           document.getElementById('stat-status').innerText = 'Offline';
+          setScanRunning(false);
           return;
         }
 
@@ -1158,6 +1251,7 @@
         if (!startRes.ok) {
           appendLine('ui-console', escapeHtml(data.error || 'Failed to start scan'), 'warn');
           document.getElementById('stat-status').innerText = 'Error';
+          setScanRunning(false);
           return;
         }
 
@@ -1175,24 +1269,27 @@
             appendLine('cli-console', escapeHtml(event.data), cls);
             maybeAddResultRow(event.data);
           } else if (event.type === 'done') {
-            document.getElementById('stat-status').innerText = event.returncode === 0 ? 'Completed' : 'Failed';
+            const stopped = document.getElementById('stat-status').innerText === 'Stopping…';
+            document.getElementById('stat-status').innerText =
+              stopped ? 'Stopped' : (event.returncode === 0 ? 'Completed' : 'Failed');
             document.getElementById('stat-code').innerText = event.returncode;
             source.close();
+            setScanRunning(false);
             if (foundCount === 0) {
               document.getElementById('results-body').innerHTML =
                 '<tr><td colspan="5" style="color:var(--grey);">No matches found this run.</td></tr>';
             }
-            // if Past Results happens to be open in another tab/view later, it'll
-            // pick this up on next visit automatically since it's persisted in SQLite
           }
         };
         source.onerror = () => {
           appendLine('ui-console', 'Stream disconnected.', 'warn');
           source.close();
+          setScanRunning(false);
         };
       }
 
-      document.querySelector('.run-btn').addEventListener('click', runScan);
+      document.getElementById('run-btn').addEventListener('click', runScan);
+      document.getElementById('stop-btn').addEventListener('click', stopScan);
 
       // keep CLI preview fresh as the form changes
       document.querySelectorAll('#uiView input, #uiView select').forEach(el => {
