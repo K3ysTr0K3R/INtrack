@@ -26,6 +26,7 @@ from intrack.lib.workflows import *
 from intrack.lib.color_handler import print_colour
 from intrack.lib.hostname_handler import get_hostname
 from intrack.lib.http_handler import http_https
+from intrack.lib.camera import mass_camera_detect
 
 console = Console()
 
@@ -49,29 +50,26 @@ def ascii_art():
 
 def is_reserved_ip(ip):
     """Check if an IP address is in a reserved range"""
-    # Convert IP string to integer for easier comparison
     octets = list(map(int, ip.split('.')))
     ip_int = (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3]
     
-    # Reserved ranges to skip
     reserved_ranges = [
-        (0x00000000, 0x00FFFFFF),    # 0.0.0.0/8 - Local Identification
-        (0x0A000000, 0x0AFFFFFF),    # 10.0.0.0/8 - Private Network
-        (0x64400000, 0x647FFFFF),    # 100.64.0.0/10 - Shared Address Space
-        (0x7F000000, 0x7FFFFFFF),    # 127.0.0.0/8 - Loopback
-        (0xA9FE0000, 0xA9FEFFFF),    # 169.254.0.0/16 - Link Local
-        (0xAC100000, 0xAC1FFFFF),    # 172.16.0.0/12 - Private Network
-        (0xC0000000, 0xC00000FF),    # 192.0.0.0/24 - IETF Protocol Assignments
-        (0xC0000200, 0xC00002FF),    # 192.0.2.0/24 - TEST-NET-1
-        (0xC0A80000, 0xC0A8FFFF),    # 192.168.0.0/16 - Private Network
-        (0xC6120000, 0xC613FFFF),    # 198.18.0.0/15 - Network Interconnect
-        (0xC6336400, 0xC63364FF),    # 198.51.100.0/24 - TEST-NET-2
-        (0xCB007100, 0xCB0071FF),    # 203.0.113.0/24 - TEST-NET-3
-        (0xE0000000, 0xEFFFFFFF),    # 224.0.0.0/4 - Multicast
-        (0xF0000000, 0xFFFFFFFF),    # 240.0.0.0/4 - Reserved
+        (0x00000000, 0x00FFFFFF),    # 0.0.0.0/8
+        (0x0A000000, 0x0AFFFFFF),    # 10.0.0.0/8
+        (0x64400000, 0x647FFFFF),    # 100.64.0.0/10
+        (0x7F000000, 0x7FFFFFFF),    # 127.0.0.0/8
+        (0xA9FE0000, 0xA9FEFFFF),    # 169.254.0.0/16
+        (0xAC100000, 0xAC1FFFFF),    # 172.16.0.0/12
+        (0xC0000000, 0xC00000FF),    # 192.0.0.0/24
+        (0xC0000200, 0xC00002FF),    # 192.0.2.0/24
+        (0xC0A80000, 0xC0A8FFFF),    # 192.168.0.0/16
+        (0xC6120000, 0xC613FFFF),    # 198.18.0.0/15
+        (0xC6336400, 0xC63364FF),    # 198.51.100.0/24
+        (0xCB007100, 0xCB0071FF),    # 203.0.113.0/24
+        (0xE0000000, 0xEFFFFFFF),    # 224.0.0.0/4
+        (0xF0000000, 0xFFFFFFFF),    # 240.0.0.0/4
     ]
     
-    # Check if IP is in any reserved range
     return any(start <= ip_int <= end for start, end in reserved_ranges)
 
 def generate_weighted_octet():
@@ -84,16 +82,11 @@ def generate_weighted_octet():
 
 def generate_ip():
     """Generate a random public IP address, avoiding reserved ranges"""
-    max_attempts = 10  # Limit attempts to avoid infinite loops
-    
+    max_attempts = 10
     for _ in range(max_attempts):
-        # Generate random IP with weighted distribution
         ip = f"{generate_weighted_octet()}.{generate_weighted_octet()}.{generate_weighted_octet()}.{generate_weighted_octet()}"
-        
         if not is_reserved_ip(ip):
             return ip
-    
-    # Fallback to a common range if we couldn't find a valid IP
     return f"{random.randint(50, 70)}.{random.randint(30, 150)}.{random.randint(1, 254)}.{random.randint(1, 254)}"
 
 def check_port(ip, port, timeout=1.0):
@@ -110,7 +103,7 @@ def check_port(ip, port, timeout=1.0):
             return False
 
 def parse_ports(port_str):
-    """Parse port string inline with error logging, minimal branching, and validation."""
+    """Parse port string inline with error logging"""
     if not port_str:
         return [80]
 
@@ -135,7 +128,6 @@ def parse_ports(port_str):
 def parse_comma_separated_args(arg_string):
     if not arg_string:
         return []
-    # Convert to lowercase for consistent matching
     return [arg.strip().lower() for arg in arg_string.split(",")]
 
 def is_valid_ip(ip):
@@ -189,6 +181,11 @@ def process_ip(ip, kwargs):
     network_checks = parse_comma_separated_args(kwargs["network"])
     worms = parse_comma_separated_args(kwargs["worm"])
 
+    def expand_all(checks, mapping):
+        if "all" in checks:
+            return [name for name, _ in mapping]
+        return checks
+
     def run_checks(checks, mapping, timeout=True):
         for item in checks:
             for name, func in mapping:
@@ -196,12 +193,17 @@ def process_ip(ip, kwargs):
                     return ip
         return None
 
-    if res := run_checks(backdoor_checks, [
+    # Backdoor checks
+    backdoor_mapping = [
         ("antsword", antsword_backdoor), ("php", php_backdoor), ("mikrotik", mikrotik_backdoor),
         ("dlink", dlink_backdoor), ("cisco", cisco_backdoor), ("webshell", webshell_backdoor)
-    ]): return res
+    ]
+    backdoor_checks = expand_all(backdoor_checks, backdoor_mapping)
+    if res := run_checks(backdoor_checks, backdoor_mapping):
+        return res
 
-    if res := run_checks(vuln_checks, [
+    # Vuln checks
+    vuln_mapping = [
         ("cve-2017-7921", check_CVE_2017_7921), ("cve-2019-17382", check_CVE_2019_17382),
         ("cve-2018-13379", check_CVE_2018_13379), ("cve-2022-47945", check_CVE_2022_47945),
         ("cve-2021-36260", check_CVE_2021_36260), ("cve-2017-5487", check_CVE_2017_5487),
@@ -215,44 +217,71 @@ def process_ip(ip, kwargs):
         ("cve-2021-22986", check_CVE_2021_22986),
         ("cve-2017-7269", check_CVE_2017_7269),
         ("cve-2021-38647", check_CVE_2021_38647)
-    ]): return res
+    ]
+    vuln_checks = expand_all(vuln_checks, vuln_mapping)
+    if res := run_checks(vuln_checks, vuln_mapping):
+        return res
 
-    if res := run_checks(instance_checks, [
+    # Instance checks
+    instance_mapping = [
         ("wordpress", check_wordpress), ("microsoft", check_microsoft_iis), ("server", check_servers),
         ("webmin", scan_webmin), ("thinkphp", check_thinkphp), ("weblogic", check_weblogic),
         ("drupal", check_drupal), ("ncast", check_ncast), ("jira", check_jira),
         ("joomla", check_joomla), ("zimbra", check_zimbra), ("apache", check_apache),
         ("php", php), ("webdav", check_webdav), ("moveit", check_moveit),
         ("nginx", check_nginx), ("bigip", bigip)
-    ]): return res
+    ]
+    instance_checks = expand_all(instance_checks, instance_mapping)
+    if res := run_checks(instance_checks, instance_mapping):
+        return res
 
-    if res := run_checks(exposure_checks, [
+    # Exposure checks
+    exposure_mapping = [
         ("robots-txt", check_robots), ("security-txt", check_security), ("sitemap", check_sitemap),
         ("api-docs", check_api_docs), ("security-headers", check_security_headers),
         ("sensitive-endpoints", check_sensitive_endpoints)
-    ]): return res
+    ]
+    exposure_checks = expand_all(exposure_checks, exposure_mapping)
+    if res := run_checks(exposure_checks, exposure_mapping):
+        return res
 
-    if res := run_checks(iot_checks, [
+    # IoT checks (original)
+    iot_mapping = [
         ("gargoyle", check_gargoyle), ("gpon", check_gpon), ("webcamxp", check_webcamxp),
         ("netgear", scan_netgear), ("hikvision", check_hikvision), ("cisco", check_cisco),
         ("epmp", check_epmp), ("network-camera", check_network_camera), ("mikrotik", mikrotik_router)
-    ]): return res
+    ]
+    iot_checks = expand_all(iot_checks, iot_mapping)
+    if res := run_checks(iot_checks, iot_mapping):
+        return res
 
-    if res := run_checks(misc_checks, [
+    # Miscellaneous checks
+    misc_mapping = [
         ("dir-listing", check_dir_listing)
-    ]): return res
+    ]
+    misc_checks = expand_all(misc_checks, misc_mapping)
+    if res := run_checks(misc_checks, misc_mapping):
+        return res
 
+    # Network checks
+    network_mapping = [
+        ("telnet", scan_telnet), ("rtsp", rtsp_checks), ("adb-misconfig", check_adb), ("network", port_scanner)
+    ]
+    network_checks = expand_all(network_checks, network_mapping)
     for network in network_checks:
-        for name, func in [("telnet", scan_telnet), ("rtsp", rtsp_checks), ("adb-misconfig", check_adb), ("network", port_scanner)]:
+        for name, func in network_mapping:
             if network == name and func(ip, open_ports):
                 return ip
 
+    # Worm checks
+    worm_mapping = [
+        ("vscode-sftp", crawl_vscode_sftp), ("microsoft", microsoft_worm),
+        ("tomcat", exploit_CVE_2017_12615_CVE_2017_12617), ("hadoop", hadoop_worm)
+    ]
+    worms = expand_all(worms, worm_mapping)
     if worms and lhost and lport:
         for worm in worms:
-            for name, func in [
-                ("vscode-sftp", crawl_vscode_sftp), ("microsoft", microsoft_worm),
-                ("tomcat", exploit_CVE_2017_12615_CVE_2017_12617), ("hadoop", hadoop_worm)
-            ]:
+            for name, func in worm_mapping:
                 if worm == name:
                     for port in open_ports:
                         func(ip, port, lhost, lport)
@@ -261,7 +290,14 @@ def process_ip(ip, kwargs):
         print_red("Error: Both -lh (lhost) and -lp (lport) must be provided with -worm.")
         sys.exit(1)
 
-    if open_ports and not any([kwargs["instance"], kwargs["vuln"], kwargs["exposure"], kwargs["iot"], kwargs["miscellaneous"], worms]):
+    # ---- NEW: Mass camera detection ----
+    if kwargs.get("mass_camera"):
+        if mass_camera_detect(ip, open_ports, kwargs["timeout"]):
+            return ip
+
+    # Fallback: return IP if any open port and no scan categories were requested
+    if open_ports and not any([kwargs["instance"], kwargs["vuln"], kwargs["exposure"],
+                               kwargs["iot"], kwargs["miscellaneous"], worms]):
         return ip
 
     return None
@@ -269,12 +305,9 @@ def process_ip(ip, kwargs):
 def safe_open_file(filename, mode):
     """Safely open a file with path traversal protection."""
     safe_path = os.path.normpath(filename)
-
-    # Check for suspicious patterns like '..' or starting from root
     if '..' in safe_path or safe_path.startswith(os.sep):
         print_red(f"Suspicious file path detected: {filename}")
         return None
-
     try:
         return open(safe_path, mode)
     except (FileNotFoundError, PermissionError) as e:
@@ -284,8 +317,7 @@ def safe_open_file(filename, mode):
     return None
 
 def read_targets_from_file(filename):
-    """Read targets from file with validation and better error handling"""
-    # Use safe file opening
+    """Read targets from file with validation"""
     f = safe_open_file(filename, 'r')
     if not f:
         print_red(f"Could not open file: {filename}")
@@ -295,12 +327,8 @@ def read_targets_from_file(filename):
 
     def process_line(line, line_number):
         target = line.strip()
-
-        # Skip empty lines and comments
         if not target or target.startswith('#'):
             return
-
-        # Process subnet
         if '/' in target:
             try:
                 subnet_ips = get_ips_from_subnet(target)
@@ -308,22 +336,17 @@ def read_targets_from_file(filename):
             except Exception as e:
                 print_red(f"Error parsing subnet {target} on line {line_number}: {e}")
             return
-
-        # Process single IP
         if is_valid_ip(target):
             ips.append(target)
             return
-
-        # Invalid IP format
         print_red(f"Invalid IP format on line {line_number}: {target}")
 
     try:
-        for line_number, line in enumerate(f, 1):  # Start line number at 1
+        for line_number, line in enumerate(f, 1):
             process_line(line, line_number)
     finally:
         f.close()
 
-    # Ensure there are valid IPs
     if not ips:
         print_red(f"No valid IPs found in file '{filename}'.")
         sys.exit(1)
@@ -332,6 +355,9 @@ def read_targets_from_file(filename):
 
 def list_scanners():
     print_colour("[+] Available Scanners:\n")
+    print_colour("[*] Use 'all' with any category flag to run every check in that group (e.g., --iot all)")
+    print_colour("[*] Use --all to run every scanner from all categories.\n")
+    print_colour("[*] Use --mass-camera-detection to run the comprehensive camera device scanner.")
 
     print()
     print_colour("[*] Worms:")
@@ -340,12 +366,12 @@ def list_scanners():
 
     print()
     print_colour("[*] Backdoors:")
-    for backdoor in ["antsword"]:
+    for backdoor in ["antsword", "php", "mikrotik", "dlink", "cisco", "webshell"]:
         print_colour(f"[!] - {backdoor}")
 
     print()
     print_colour("[*] Exposures:")
-    for exposure in ["robots-txt", "security-txt", "sitemap"]:
+    for exposure in ["robots-txt", "security-txt", "sitemap", "api-docs", "security-headers", "sensitive-endpoints"]:
         print_colour(f"[!] - {exposure}")
 
     print()
@@ -359,14 +385,14 @@ def list_scanners():
 
     print()
     print_colour("[*] Network Checks:")
-    for network in ["telnet", "rdp", "rtsp", "adb-misconfig", "port-scanner"]:
+    for network in ["telnet", "rtsp", "adb-misconfig", "network"]:
         print_colour(f"[!] - {network}")
 
     print()
     print_colour("[*] IoT Checks:")
     for iot in [
         "gargoyle", "gpon", "webcamxp", "netgear", "hikvision",
-        "cisco", "epmp", "network-camera", "routeros"
+        "cisco", "epmp", "network-camera", "mikrotik"
     ]:
         print_colour(f"[!] - {iot}")
 
@@ -383,9 +409,7 @@ def list_scanners():
         "CVE-2017-5487", "CVE-2017-7925", "CVE-2022-40684", "CVE-2021-34473",
         "CVE-2023-23752", "CVE-2015-1635", "CVE-2022-1388", "CVE-2021-22986",
         "CVE-2019-2000", "CVE-2020-3259", "CVE-2020-3452", "CVE-2021-1445",
-        "CVE-2022-20842",
-        "CVE-2017-7269", "CVE-2021-38647",
-        "traversal"
+        "CVE-2022-20842", "CVE-2017-7269", "CVE-2021-38647"
     ]:
         print_colour(f"[!] - {vuln}")
 
@@ -394,6 +418,9 @@ def list_scanners():
     for wf in ["microsoft"]:
         print_colour(f"[!] - {wf}")
 
+    print()
+    print_colour("[*] Camera Detection:")
+    print_colour("[!] - mass-camera-detection (comprehensive camera fingerprinting)")
 
 def print_scan_context(kwargs):
     if kwargs['output_file']:
@@ -404,8 +431,15 @@ def print_scan_context(kwargs):
 
     active_scans = []
     for key in ["backdoor", "vuln", "instance", "exposure", "iot", "miscellaneous", "network", "worm"]:
-        if kwargs[key]:
-            active_scans.append(f"{key.capitalize()} checks: {kwargs[key]}")
+        val = kwargs[key]
+        if val:
+            if "all" in parse_comma_separated_args(val):
+                active_scans.append(f"{key.capitalize()} checks: all")
+            else:
+                active_scans.append(f"{key.capitalize()} checks: {val}")
+
+    if kwargs.get("mass_camera"):
+        active_scans.append("Mass Camera Detection: enabled")
 
     if active_scans:
         print_colour("[*] Active scan modules:")
@@ -515,35 +549,46 @@ def handle_known_ips(ip_addresses, kwargs, output_file):
 @click.option("-L", "--lhost", type=str, help="Add a listening host for revshells.")
 @click.option("-P", "--lport", type=str, help="A listening port for revshells.")
 @click.option("--hostname", is_flag=True, help="Resolve hostnames for IP addresses.")
-@click.option("-i", "--instance", type=str, help="Type of instance to check.")
-@click.option("-b", "--backdoor", type=str, help="Look for backdoor implants.")
-@click.option("-w", "--worm", type=str, help="Enable special script execution with a specified type (e.g., 'vscode-sftp').")
-@click.option("-v", "--vuln", type=str, help="Enable vuln script execution with a specified type (e.g., CVE-2017-7921).")
-@click.option("-e", "--exposure", type=str, help="Used to detect exposure files.")
-@click.option("--iot", type=str, help="Used to detect IoT devices.")
-@click.option("-m", "--miscellaneous", type=str, help="Used for miscellaneous checks.")
+@click.option("-i", "--instance", type=str, help="Type of instance to check. Use 'all' for all instance checks.")
+@click.option("-b", "--backdoor", type=str, help="Look for backdoor implants. Use 'all' for all backdoor checks.")
+@click.option("-w", "--worm", type=str, help="Enable special script execution with a specified type (e.g., 'vscode-sftp'). Use 'all' for all worms.")
+@click.option("-v", "--vuln", type=str, help="Enable vuln script execution with a specified type (e.g., CVE-2017-7921). Use 'all' for all vuln checks.")
+@click.option("-e", "--exposure", type=str, help="Used to detect exposure files. Use 'all' for all exposure checks.")
+@click.option("--iot", type=str, help="Used to detect IoT devices. Use 'all' for all IoT checks.")
+@click.option("-m", "--miscellaneous", type=str, help="Used for miscellaneous checks. Use 'all' for all misc checks.")
 @click.option("--workflows", type=str, help="Run workflow scans on your targets.")
-@click.option("-N", "--network", type=str, help="Used for network scans.")
+@click.option("-N", "--network", type=str, help="Used for network scans. Use 'all' for all network checks.")
 @click.option("--timeout", default=10, help="Timeout seconds for web requests.")
 @click.option("--probe", is_flag=True, help="Used for probing hosts for HTTP/HTTPS")
 @click.option("-s", "--spider", type=str, help="Specify the subnet range to scan if a result is found (e.g., /20, /24).")
 @click.option("--list", "list_flag", is_flag=True, help="List available scanners and checks.")
 @click.option("--bar-style", default="smooth", type=click.Choice(["smooth", "blocks", "bubbles", "solid", "classic", "brackets"]), help="Progress bar style (default 'smooth').")
+@click.option("--all", "run_all", is_flag=True, help="Run every scanner from all categories (equivalent to setting all category flags to 'all').")
+@click.option("--mass-camera-detection", "mass_camera", is_flag=True, help="Run comprehensive camera device detection (CamTRON rules).")
 def main(**kwargs):
     ascii_art()
-
     config_handler.set_global(spinner='dots_waves', force_tty=True, dual_line=True)
 
     if kwargs['list_flag']:
         list_scanners()
         sys.exit(0)
 
+    # --all overrides every category to "all"
+    if kwargs['run_all']:
+        kwargs['instance'] = 'all'
+        kwargs['backdoor'] = 'all'
+        kwargs['worm'] = 'all'
+        kwargs['vuln'] = 'all'
+        kwargs['exposure'] = 'all'
+        kwargs['iot'] = 'all'
+        kwargs['miscellaneous'] = 'all'
+        kwargs['network'] = 'all'
+
     if not (kwargs['host'] or kwargs['filename'] or kwargs['n_targets']):
         print_red("You must provide either --host, --f, or --n")
         sys.exit(1)
 
     output_file = open_output_file(kwargs['output_file'])
-
     print_scan_context(kwargs)
 
     if kwargs['filename']:
