@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+try:
+    import sqlite3
+except ImportError:
+    try:
+        import pysqlite3
+        import sys
+        sys.modules['sqlite3'] = pysqlite3
+    except ImportError:
+        pass
+
 import os
 import sys
 import random
@@ -32,7 +42,6 @@ from intrack.lib.iot.exploits import all_exploits
 console = Console()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 def print_red(message):
     print_colour(f"[-] {message}")
@@ -535,9 +544,8 @@ def handle_known_ips(ip_addresses, kwargs, output_file):
     print_colour(f"[+] Scan complete - Found {found_count} targets")
     return found_targets
 
-
-
 @click.command(help="INtrack - Internet Crawler (rich_click).")
+@click.option("--webui", is_flag=True, help="Start the INtrack web dashboard (Flask UI).")
 @click.option("-H", "--host", type=str, help="Specify a single target IP or subnet range of IPs to scan /24, /23, /22, etc.")
 @click.option("-f", "--file", "filename", type=str, help="Specify a file containing target IPs.")
 @click.option("-n", "--n-targets", "n_targets", type=int, help="Number of targets to find. Can also be used to increase the range of the scan.")
@@ -566,6 +574,27 @@ def handle_known_ips(ip_addresses, kwargs, output_file):
 def main(**kwargs):
     ascii_art()
     config_handler.set_global(spinner='dots_waves', force_tty=True, dual_line=True)
+
+    if kwargs.get('webui'):
+        print_colour("[+] Starting INtrack Web UI...")
+        try:
+            webui_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'webui')
+            if webui_dir not in sys.path:
+                sys.path.insert(0, webui_dir)
+
+            from intrack.webui.app import app
+            app.run(debug=True, host='0.0.0.0', port=5000)
+        except ImportError as e:
+            print_red(f"Failed to import Flask web UI: {e}")
+            print_red("Make sure you have installed the web UI dependencies:")
+            print_red("  pip install -r intrack/webui/requirements.txt")
+            if "_sqlite3" in str(e):
+                print_red("  (If you're missing _sqlite3, try: pip install pysqlite3)")
+            sys.exit(1)
+        except Exception as e:
+            print_red(f"Error starting web UI: {e}")
+            sys.exit(1)
+        return
 
     if kwargs['list_flag']:
         list_scanners()
